@@ -608,13 +608,13 @@
              keyMgmt char(KEY_MGMT_SIZE);
              keyData char(KEY_MGMT_SIZE);
           end-pi;
-           Clear RetKey;
+
           // This is a trivial key management idea and is used to demonstrate ho
           // information may be stored in the encoded data which is written to t
           // be used to communicate between the encode and decode operations.
           if type = 'E';   // encoding, set the current key
               keyMgmt = 'KEYTYPE2';
-              QualNKStore = 'KEYSTORE01P01TSTDAT';
+              QualNKStore = 'KEYSTORE01ALBERTODTA';
               RecLabel = 'pippopluto';
               ExportKeyProc(QualNKStore
                            :RecLabel
@@ -622,7 +622,7 @@
               KeyData = RetKey;
             //keyData = '0123456789ABCDEG'; // end in G
           elseif keyMgmt = 'KEYTYPE1';  // decoding, determine which key to use
-              QualNKStore = 'KEYSTORE01P01TSTDAT';
+              QualNKStore = 'KEYSTORE01ALBERTODTA';
               RecLabel = 'pippopluto';
               ExportKeyProc(QualNKStore
                            :RecLabel
@@ -630,7 +630,7 @@
               KeyData = RetKey;
             //keyData = '0123456789ABCDEF'; // end in F
           elseif keyMgmt = 'KEYTYPE2';
-              QualNKStore = 'KEYSTORE01P01TSTDAT';
+              QualNKStore = 'KEYSTORE01ALBERTODTA';
               RecLabel = 'pippopluto';
               ExportKeyProc(QualNKStore
                            :RecLabel
