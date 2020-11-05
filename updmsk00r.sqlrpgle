@@ -1,436 +1,1 @@
-        dcl-f cfgdsp00v workstn IndDs(Dspf) ;                                   
-                                                                                
-        dcl-pr UpdMask;                                                         
-          p_UpdMask LikeDs(Ds_UpdMask);                                         
-        end-pr;                                                                 
-                                                                                
-        Dcl-pr FindAutUser;                                                     
-          SourceString varChar(256);                                            
-          NomeUtente   Char(10);                                                
-          p_Posi       Zoned(5:0);                                              
-          p_CheckRule	Ind;                                                      
-          EndProc      Ind;                                                     
-        End-pr;                                                                 
-        Dcl-Pr UpdateAlter;                                                     
-             p_UpdMask  LikeDs(Ds_UpdMask);                                     
-             MsgInd Ind;                                                        
-        End-Pr;                                                                 
-        Dcl-Pr RemovetAlter;                                                    
-             p_UpdMask  LikeDs(Ds_UpdMask);                                     
-             MsgInd Ind;                                                        
-        End-Pr;                                                                 
-        dcl-pr UpdFprocMask;                                                    
-          p_DsInput LikeDs(DsInput);                                            
-        end-pr;                                                                 
-        Dcl-Pr pCheckObj;                                                       
-          p_NomObj  char(10) const;                                             
-          p_TipObj  char(10) const;                                             
-          p_Resp    char(1) ;                                                   
-        End-Pr;                                                                 
-        dcl-pr CmdExec ExtPgm('QCMDEXC');                                       
-          Cmd Char(256) options(*varsize) const;                                
-          Len Packed(15:5) const;                                               
-        end-pr;                                                                 
-        Dcl-pr ElencoCampi;                                                     
-          p_NomeLibreria char(10);                                              
-          p_NomeFile     char(10);                                              
-          p_NomeCampo    char(10);                                              
-        end-pr;                                                                 
-                                                                                
-        Dcl-ds Dspf qualified ;                                                 
-             EleCamInd    ind pos(04);                                          
-             InsertInd    ind pos(06);                                          
-             Annulla      ind pos(12);                                          
-             RemoveInd    ind pos(40);                                          
-             CampoOK      ind pos(50);                                          
-             MasNomOK     ind pos(60);                                          
-             MessageInd   ind pos(90);                                          
-        End-Ds;                                                                 
-        dcl-ds Ds_UpdMask Qualified;                                            
-          UM_Lib       char(10);                                                
-          UM_File      char(10);                                                
-          UM_Cam       char(10);                                                
-          UM_TipDat    char(10);                                                
-          UM_LunDat     Int(10);                                                
-          UM_MasCam    char(1);                                                 
-          UM_MasNom    char(256)      ;                                         
-          UM_NomUte    char(10)  ;                                              
-         //          UM_RuleText  varchar(256);                                 
-          UM_Message     char(125);                                             
-          UM_InsertInd    ind;                                                  
-          UM_MessageInd   ind  inz('0');                                        
-        end-ds;                                                                 
-        dcl-ds Ds_CrtMask qualified;                                            
-           M_NomUte    char(10)  ;                                              
-           M_TipDat    char(10);                                                
-           M_Lunghezza bindec(9);                                               
-           M_NumSca    bindec(9);                                               
-        end-ds;                                                                 
-        dcl-ds Ds_FilLst ExtName('FILLST00F') qualified;                        
-        end-ds;                                                                 
-        dcl-ds Ds_MSK_AllRec Qualified;                                         
-          AR_LibNom       char(10);                                             
-          AR_FilNom       char(10);                                             
-          AR_Campo        char(10);                                             
-          AR_TipoDato     char(10);                                             
-          AR_LungDato     Int(10:0);                                            
-          AR_NumScale     Int(10:0);                                            
-          AR_CritCam      char(1);                                              
-          AR_LibFldPr     char(10);                                             
-          AR_NomPgmFP     char(10);                                             
-          AR_MasCam       char(1);                                              
-          AR_MasNom       char(256);                                            
-          AR_NomUte       char(10);                                             
-          AR_DesUte       char(10);                                             
-          AR_regola       varchar(256);                                         
-        end-ds;                                                                 
-                                                                                
-        dcl-ds DsInput Qualified;                                               
-          p_LibNom       char(10);   //Nome Libreria                            
-          p_FilNom       char(10);   //Nome File                                
-          p_Campo        char(10);   //Nome campo del file                      
-          p_TipoDato     char(10);   //Tipo di dato                             
-          p_LungDato     Int(10:0);  //Lunghezza del dato                       
-          //p_NumScale     Int(10:0);  //Numeric scale - nr decimali            
-          p_CritCam      char(1);    //Campo crttografato: S=SI   N=No          
-          p_LibPgmFP     char(10);   //Libreria del pgm della field proceure    
-          p_PgmFP        char(10);   //nome programma della field procedure     
-          p_MasCam       char(1);    //Campo mascherato: S=I  N=no              
-          p_MasNom       char(256);  //Nome della maschera                      
-          p_NomUte       char(10);   //Nome utente autorizzato ai dati          
-          p_Error        Ind ;       //Indicatore di errore esecuzione          
-          p_ErrorMsg     char(256);   //Messaggio di errore                     
-        end-ds;                                                                 
-        dcl-ds p_UpdMask LikeDs(Ds_UpdMask);                                    
-                                                                                
-        dcl-s Counter zoned(4:0);                                               
-        dcl-s wRetval char(256);                                                
-        dcl-s Cmd     char(1024);                                               
-        dcl-s i       zoned(3:0);                                               
-        dcl-s Fine         Ind;                                                 
-        dcl-s p_NomeUtente char(10);                                            
-        dcl-s p_Posi       Zoned(5:0);                                          
-        dcl-s p_CheckRule	Ind;	                                                 
-        dcl-s p_Resp      Ind;                                                  
-                                                                                
-        Dcl-Proc UpdMask export;                                                
-        Dcl-pi UpdMask;                                                         
-          p_UpdMask LikeDs(Ds_UpdMask);                                         
-        end-pi;                                                                 
-            clear Dspf;                                                         
-            UM_LIBNOM = p_UpdMask.UM_Lib;                                       
-            UM_FILNOM = p_UpdMask.UM_File;                                      
-            UM_CAMPO  = p_UpdMask.UM_Cam;                                       
-            UM_MASCAM = p_UpdMask.UM_MasCam;                                    
-            UM_MASNOM = p_UpdMask.UM_MasNom;                                    
-            UM_NOMUTE = p_UpdMask.UM_NomUte;                                    
-            Dspf.InsertInd = p_UpdMask.UM_InsertInd;                            
-            Dspf.Annulla = *off;                                                
-          DoW (Dspf.Annulla = *Off And p_UpdMask.UM_MessageInd = *Off);         
-            If (p_UpdMask.UM_InsertInd = *Off);                                 
-                Dspf.CampoOK = *On;                                             
-                Dspf.RemoveInd = *On;                                           
-                Exec Sql                                                        
-                 SELECT * Into :Ds_FilLst                                       
-                   FROM FILLST00F                                               
-                  WHERE FL_LIB   = :UM_LIBNOM                                   
-                    AND FL_FILE  = :UM_FILNOM                                   
-                    AND FL_CAMPO = :UM_CAMPO;                                   
-                If (SqlStt = '00000');                                          
-                  Dspf.CampoOK = *On;                                           
-                  If (Ds_FilLst.FL_MasNom <> *blanks);                          
-                    UM_MASNOM = Ds_FilLst.FL_MasNom;                            
-                    Dspf.MasNomOK = *on;                                        
-                  EndIf;                                                        
-                EndIf;                                                          
-            EndIf;                                                              
-            Exfmt MSKUPD;                                                       
-            Dspf.MessageInd = *Off;                                             
-            If (Dspf.Annulla = *On);                                            
-              leave;                                                            
-            EndIf;                                                              
-            If (UM_CAMPO <> *blanks);                                           
-              Dspf.CampoOk = *On;                                               
-            EndIf;                                                              
-            If (p_UpdMask.UM_InsertInd = *On) And (Dspf.CampoOk = *Off);        
-               If (Dspf.EleCamInd = *On);                                       
-                 ElencoCampi(UM_LIBNOM                                          
-                            :UM_FILNOM                                          
-                            :UM_CAMPO);                                         
-                 If (UM_CAMPO <> *blanks);                                      
-                    Dspf.CampoOk = *On;                                         
-                 EndIf;                                                         
-                 Iter;                                                          
-               EndIf;                                                           
-               If (UM_CAMPO = *blanks);                                         
-                 UM_ERRMSG = 'Nome cmapo oblbigatorio.';                        
-                 Dspf.MessageInd = *On;                                         
-                 Iter;                                                          
-               EndIf;                                                           
-                                                                                
-            Else;                                                               
-               If (UM_MASCAM = 'N');                                            
-                 UM_ERRMSG = 'Per inserire gli altri campi, impostare lo stato +
-                              a "S".';                                          
-                 Dspf.MessageInd = *On;                                         
-                 Iter;                                                          
-               EndIf;                                                           
-                                                                                
-               If (UM_MASNOM = *blanks) And (Dspf.MasNomOk = *On);              
-                 UM_ERRMSG = 'Nome maschera obbligatorio.';                     
-                 Dspf.MessageInd = *On;                                         
-                 Iter;                                                          
-               Else;                                                            
-                 If (Dspf.MasNomOk = *Off);                                     
-                   Dspf.MasNomOk = *On;                                         
-                   Iter;                                                        
-                 EndIf;                                                         
-               EndIf;                                                           
-                  If (UM_NOMUTE <> *blanks);                                    
-                                                                                
-                    pCheckObj(UM_NOMUTE                                         
-                             :'*USRPRF'                                         
-                             :p_Resp);                                          
-                    If (p_Resp = '1');                                          
-                       UM_ERRMSG = 'Nome utente non trovato.';                  
-                       Dspf.MessageInd = *On;                                   
-                       Iter;                                                    
-                    Else;                                                       
-                       Exec Sql                                                 
-                         SELECT * INTO :Ds_FilLst                               
-                           FROM FILLST00F                                       
-                          WHERE FL_LIB = :UM_LIBNOM                             
-                            AND FL_FILE = :UM_FILNOM                            
-                            AND FL_CAMPO = :UM_CAMPO                            
-                            AND FL_UTENTE = :UM_NOMUTE;                         
-                        If (SqlStt = '00000');                                  
-                          UM_ERRMSG = 'Nome utente giЮ inserito.';              
-                          Dspf.MessageInd = *On;                                
-                          Iter;                                                 
-                        EndIf;                                                  
-                    EndIf;                                                      
-                  Else;                                                         
-                    UM_ERRMSG = 'Nome utente obbligatorio.';                    
-                    Dspf.MessageInd = *On;                                      
-                    Iter;                                                       
-                  EndIf;                                                        
-                                                                                
-                                                                                
-            If (p_UpdMask.UM_InsertInd = *Off);                                 
-              RemoveAlter(p_UpdMask                                             
-                         :Dspf.MessageInd   );                                  
-            Else;                                                               
-              InsertAlter(p_UpdMask                                             
-                         :Dspf.MessageInd   );                                  
-            EndIF;                                                              
-                                                                                
-            EndIf;                                                              
-                                                                                
-         EndDo;                                                                 
-                                                                                
-          *Inlr = *ON;                                                          
-                                                                                
-        End-Proc;                                                               
-                                                                                
-        Dcl-Proc RemoveAlter;                                                   
-        Dcl-Pi RemoveAlter;                                                     
-          p_UpdMask  LikeDs(Ds_UpdMask);                                        
-          MsgInd      Ind;                                                      
-        End-Pi;                                                                 
-                                                                                
-                DsInput.p_LibNom = UM_LIBNOM;                                   
-                DsInput.p_FilNom = UM_FILNOM;                                   
-                DsInput.p_Campo  = UM_CAMPO ;                                   
-                DsInput.p_MasCam  = UM_MASCAM;                                  
-                DsInput.p_MasNom  = UM_MASNOM ;                                 
-                DsInput.p_NomUte  = UM_NOMUTE;                                  
-                                                                                
-                UpdFprocMask(DsInput);                                          
-                                                                                
-                If (DsInput.p_Error = *On);                                     
-                  UM_ERRMSG = 'CREATE OR REPLACE MASK terminato in errore.' +   
-                  ' Maschera non impostata, verificare.';                       
-                  p_UpdMask.UM_MessageInd = *On;                                
-                Else;                                                           
-                  Exec Sql                                                      
-                    DELETE FROM FILLST00F WHERE FL_LIB = :UM_LIBNOM             
-                                           AND FL_FILE = :UM_FILNOM             
-                                          AND FL_CAMPO = :UM_CAMPO              
-                                         AND FL_UTENTE = :UM_NOMUTE;            
-                                                                                
-                  p_UpdMask.UM_Message = 'CREATE OR REPLACE MASK e +            
-                           aggiornamento DB termianti correttamente.';          
-                  p_UpdMask.UM_MessageInd = *On;                                
-                EndIf;                                                          
-        End-Proc;                                                               
-                                                                                
-        Dcl-Proc InsertAlter;                                                   
-        Dcl-Pi InsertAlter;                                                     
-             p_UpdMAsk  LikeDs(Ds_UpdMask);                                     
-             MsgInd      Ind;                                                   
-        End-Pi;                                                                 
-          Dcl-s Counter Zoned(5:0);                                             
-          Dcl-s WRetVal char(256);                                              
-                                                                                
-            DsInput.p_LibNom = UM_LIBNOM;                                       
-            DsInput.p_FilNom = UM_FILNOM;                                       
-            DsInput.p_Campo  = UM_CAMPO ;                                       
-            DsInput.p_MasCam  = 'S'       ;                                     
-            DsInput.p_MasNom  = UM_MASNOM ;                                     
-            DsInput.p_NomUte  = UM_NOMUTE;                                      
-            DsInput.p_TipoDato = p_UpdMask.UM_TipDat;                           
-            DsInput.p_LungDato = p_UpdMask.UM_LunDat;                           
-                                                                                
-		          //Verifica se primo utente inserito	                                
-            Exec Sql                                                            
-               SELECT COUNT(*) INTO :Counter FROM FILLST00F                     
-                 WHERE FL_LIB = :UM_LIBNOM                                      
-                   AND FL_FILE = :UM_FILNOM                                     
-                   AND FL_CAMPO = :UM_CAMPO                                     
-                   AND FL_MASCAM = 'N';                                         
-            If (Counter > 0);                                                   
-                                                                                
- 	              UpdFprocMask(Dsinput);                                          
-                Exec Sql                                                        
-                  UPDATE FILLST00F SET FL_MASCAM = 'S',                         
-                                       FL_MASNOM = :UM_MASNOM,                  
-                                       FL_UTENTE = :UM_NOMUTE                   
-                               WHERE  FL_LIB = :UM_LIBNOM                       
-                                 AND FL_FILE = :UM_FILNOM                       
-                                 AND FL_CAMPO = :UM_CAMPO                       
-                                 AND FL_MASCAM = 'N';                           
-            Else;                                                               
-               //Verifica se CAMPO giЮ═ inserito                                
-               Exec Sql                                                         
-               		SELECT COUNT(*) INTO :Counter FROM FILLST00F                   
-                 		WHERE FL_LIB = :UM_LIBNOM                                    
-                   		AND FL_FILE = :UM_FILNOM                                   
-                   		AND FL_CAMPO = :UM_CAMPO;                                  
-                If (SqlStt = '00000');                                          
-	                UpdFprocMask(Dsinput);                                         
-                 Exec Sql                                                       
-                		INSERT INTO FILLST00F VALUES(                                 
-                									  :UM_LIBNOM,                                          
-                									  :UM_FILNOM,                                          
-                									  :UM_CAMPO,                                           
-                									  :p_UpdMask.UM_TipDat,                                
-                									  :p_UpdMask.UM_LunDat,                                
-                           (SELECT FL_CRITCAM FROM FILLST00F                    
-                									  	WHERE FL_LIB = :UM_LIBNOM                           
-                									  	  AND FL_FILE= :UM_FILNOM                           
-                									  	  AND FL_CAMPO = :UM_CAMPO),                        
-                									   (SELECT FL_FLDPRLPGM FROM FILLST00F                 
-                									  	WHERE FL_LIB = :UM_LIBNOM                           
-                									  	  AND FL_FILE= :UM_FILNOM                           
-                									  	  AND FL_CAMPO = :UM_CAMPO),                        
-                									   (SELECT FL_FLDPRCPGM FROM FILLST00F                 
-                									  	WHERE FL_LIB = :UM_LIBNOM                           
-                									  	  AND FL_FILE= :UM_FILNOM                           
-                									  	  AND FL_CAMPO = :UM_CAMPO),                        
-                									  'S',                                                 
-                									  :UM_MASNOM,                                          
-                									  :UM_NOMUTE                                           
-                									 );                                                    
-                Else;                                                           
-                 Exec Sql                                                       
-                	DECLARE INS_ALLREC CURSOR FOR                                  
-             		   SELECT C.TABLE_SCHEMA, C.TABLE_NAME,                          
-                           C.COLUMN_NAME, C.DATA_TYPE, C."LENGTH",              
-                           COALESCE(C.NUMERIC_SCALE, 0),                        
-                           'N' AS CRITCAM,                                      
-                           ' ' AS LIB_PGM_FIELDPROC,                            
-                           ' ' AS NOME_PGM_FIELDPROC,                           
-                           CASE                                                 
-                             WHEN C.COLUMN_NAME = :UM_CAMPO THEN :UM_MASCAM     
-                             WHEN COALESCE(CT.RULETEXT, ' ') <> ' '             
-                             THEN 'S'                                           
-                             ELSE 'N'                                           
-                           END CAMPO_MSACHERATO,                                
-                           CASE                                                 
-                             WHEN COALESCE(CT.RCAC_NAME, ' ') <> ' '            
-                             THEN CT.RCAC_NAME                                  
-                             ELSE ' '                                           
-                           END AS NOME_MASCHERA,                                
-                           ' ' AS NOME_UTENTE,                                  
-                           ' ' AS DESC_UTENTE,                                  
-                           COALESCE(CT.RULETEXT, ' ')                           
-                    FROM QSYS2.SYSCOLUMNS C LEFT JOIN QSYS2.SYSFIELDS F ON      
-                                    C.TABLE_SCHEMA = F.TABLE_SCHEMA AND         
-                                    C.TABLE_NAME   = F.TABLE_NAME   AND         
-                                    C.COLUMN_NAME  = F.COLUMN_NAME              
-                                            LEFT JOIN QSYS2.SYSCONTROLS CT ON   
-                                    C.TABLE_SCHEMA = CT.TABLE_SCHEMA AND        
-                                    C.TABLE_NAME   = CT.TABLE_NAME   AND        
-                                    C.COLUMN_NAME  = CT.COLUMN_NAME             
-                                                                                
-                    WHERE (C.TABLE_SCHEMA = :UM_LIBNOM)                         
-                      AND (C.TABLE_NAME = :UM_FILNOM);                          
-                    EXEC SQL                                                    
-                     	FETCH INS_ALLREC INTO :Ds_MSK_AllRec;                     
-                                                                                
-                DoW (SqlStt <> '00000') And (Dspf.MessageInd = *Off);           
-                  Fine = *Off;                                                  
-                  DoW (DS_MSK_AllRec.AR_Regola <> *blank);                      
-                     FindAutUser(Ds_MSK_AllRec.AR_Regola                        
-                               :p_NomeUtente                                    
-                               :p_PosI                                          
-                               :p_CheckRule                                     
-                               :Fine);                                          
-                     If (Fine = *On);                                           
-                       Leave;                                                   
-                     EndIf;                                                     
-                     If (p_CheckRule = *On);                                    
-                      Ds_MSK_ALLRec.AR_NomUte = p_NomeUtente;                   
-                                                                                
-                      DsInput.p_LibNom = Ds_MSK_ALLRec.AR_LibNom;               
-                      DsInput.p_FilNom = Ds_MSK_ALLRec.AR_FilNom;               
-                      DsInput.p_Campo  = Ds_MSK_ALLRec.AR_Campo;                
-                      DsInput.p_TipoDato = Ds_MSK_ALLRec.AR_TipoDato;           
-   		                 DsInput.p_LungDato = Ds_MSK_ALLRec.AR_LungDato;           
-              //p_NumScale     Int(10:0);  //Numeric scale - nО©╫ decimali      
-                      DsInput.p_CritCam = Ds_MSK_ALLRec.AR_CritCam;             
-                      DsInput.p_LibPgmFP = Ds_MSK_ALLRec.AR_LibFldPr;           
-                      DsInput.p_PgmFP = Ds_MSK_ALLRec.AR_NomPgmFP;              
-                      DsInput.p_MasCam = Ds_MSK_ALLRec.AR_MasCam;               
-                      DsInput.p_MasNom = Ds_MSK_ALLRec.AR_MasNom;               
-                      DsInput.p_NomUte = Ds_MSK_ALLRec.AR_NomUte;               
-                      Clear DsInput.p_Error ;                                   
-                      Clear DsInput.p_ErrorMsg;                                 
-                      UpdFprocMask(DsInput);                                    
-                     EndIf;                                                     
-                     If (DsInput.p_Error = *On);                                
-                       Ds_FilLst = Ds_MSK_AllRec;                               
-                       EXEC SQL                                                 
-                  				  		INSERT INTO FILLST00F VALUES(:DS_FilLst);             
-                       If (SqlStt <> '00000');                                  
-                         UM_ERRMSG = 'Insert DB terminato con errori, +         
-                                 		CREATE MASK non eseguito.';                  
-                         Dspf.MessageInd = *ON;                                 
-                         Leave;                                                 
-                       EndIf;                                                   
-                     EndIf;                                                     
-	                                                                               
-                  EndDo;                                                        
-                  EXEC SQL                                                      
-                			FETCH INS_ALLREC INTO :Ds_MSK_AllRec;                        
-                EndDo;                                                          
-                EndIf;                                                          
-                                                                                
-          EndIf;                                                                
-                                                                                
-        End-Proc;                                                               
-                                                                                
-        Dcl-Proc pCheckObj;                                                     
-        Dcl-Pi pCheckObj;                                                       
-           p_NomObj char(10) const;                                             
-           p_TipObj char(10) const;                                             
-           p_Resp   char(1) ;                                                   
-        End-Pi;                                                                 
-           Monitor;                                                             
-             Cmd = 'CHKOBJ ' + %Trim(p_NomObj) + ' OBJTYPE(' + p_TipObj + ')';  
-             CmdExec(Cmd                                                        
-                    :%Len(Cmd));                                                
-           On-Error;                                                            
-             p_Resp = '1';                                                      
-           EndMon;                                                              
-        End-Proc;                                                               
+@@@@@@@@└┐⌠`├@┐├┤└╒≈ПП╔@╕√≥▓╒ё∙@и∙└д╒Mд╒≈├]@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`≈≥@Д≈└т│╒▓^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mД≈└т│╒▓@с┴▓┘д╒Mд╒mД≈└т│╒▓]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`≈≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`≈≥@ф┴∙└а╓ёД╒┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Б√╓≥┐┘Бё≥┴∙┤@╔│≥ц┬│≥MРУЖ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@у√■┘Дё┘∙ё┘@@@ц┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mв√╒┴@@@@@@@И√∙┘└MУzП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mц┬┘┐▓ы╓⌠┘и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@е∙└в≥√┐@@@@@@и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`≈≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в≥@Д≈└│ё┘а⌠ё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@≈mД≈└т│╒▓@@с┴▓┘д╒Mд╒mД≈└т│╒▓]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@т╒┤и∙└@и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в≥@ы┘■√╔┘ёа⌠ё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@≈mД≈└т│╒▓@@с┴▓┘д╒Mд╒mД≈└т│╒▓]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@т╒┤и∙└@и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`≈≥@Д≈└ф≈≥√┐т│╒▓^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mд╒и∙≈╓ё@с┴▓┘д╒Mд╒и∙≈╓ё]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`≈≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в≥@≈ц┬┘┐▓ж┌▒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mу√■ж┌▒@@┐┬│≥MЯП]@┐√∙╒ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mЦ┴≈ж┌▒@@┐┬│≥MЯП]@┐√∙╒ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mы┘╒≈@@@@┐┬│≥MЯ]@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`≈≥@ц■└е╖┘┐@е╖ёв┤■M}ьцтдеГц}]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@ц■└@ц┬│≥MРУЖ]@√≈ё┴√∙╒M\╔│≥╒┴╘┘]@┐√∙╒ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@с┘∙@в│┐▓┘└MЯУzУ]@┐√∙╒ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`≈≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`≈≥@е⌠┘∙┐√ц│■≈┴^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mу√■┘с┴┌≥┘≥┴│@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mу√■┘ф┴⌠┘@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mу√■┘ц│■≈√@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`≈≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`└╒@д╒≈├@≤╓│⌠┴├┴┘└@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@е⌠┘ц│■и∙└@@@@┴∙└@≈√╒MПТ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@и∙╒┘≥ёи∙└@@@@┴∙└@≈√╒MПЖ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@а∙∙╓⌠⌠│@@@@@@┴∙└@≈√╒MЯР]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@ы┘■√╔┘и∙└@@@@┴∙└@≈√╒MТП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@ц│■≈√жр@@@@@@┴∙└@≈√╒MУП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@т│╒у√■жр@@@@@┴∙└@≈√╒MЖП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@т┘╒╒│┤┘и∙└@@@┴∙└@≈√╒MЫП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`д╒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`└╒@д╒mД≈└т│╒▓@ь╓│⌠┴├┴┘└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmс┴┌@@@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmф┴⌠┘@@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmц│■@@@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@ДтmЦ┴≈д│ё@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmс╓∙д│ё@@@@@и∙ёMЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmт│╒ц│■@@@@┐┬│≥MЯ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmт│╒у√■@@@@┐┬│≥MРУЖ]@@@@@@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmу√■Дё┘@@@@┐┬│≥MЯП]@@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@aa@@@@@@@@@@Дтmы╓⌠┘Ц┘╖ё@@╔│≥┐┬│≥MРУЖ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmт┘╒╒│┤┘@@@@@┐┬│≥MЯРУ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmи∙╒┘≥ёи∙└@@@@┴∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@Дтmт┘╒╒│┤┘и∙└@@@┴∙└@@┴∙╘M}П}]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`└╒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`└╒@д╒mц≥ёт│╒▓@≤╓│⌠┴├┴┘└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@тmу√■Дё┘@@@@┐┬│≥MЯП]@@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@тmЦ┴≈д│ё@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@тmс╓∙┤┬┘╘╘│@┌┴∙└┘┐MЫ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@тmу╓■Б┐│@@@@┌┴∙└┘┐MЫ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`└╒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`└╒@д╒mф┴⌠с╒ё@е╖ёу│■┘M}фиссБЦППф}]@≤╓│⌠┴├┴┘└^@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`└╒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`└╒@д╒mтБрmа⌠⌠ы┘┐@ь╓│⌠┴├┴┘└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmс┴┌у√■@@@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmф┴⌠у√■@@@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmц│■≈√@@@@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmЦ┴≈√д│ё√@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmс╓∙┤д│ё√@@@@@и∙ёMЯПzП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmу╓■Б┐│⌠┘@@@@@и∙ёMЯПzП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmц≥┴ёц│■@@@@@@┐┬│≥MЯ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmс┴┌ф⌠└в≥@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmу√■в┤■фв@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmт│╒ц│■@@@@@@@┐┬│≥MЯ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmт│╒у√■@@@@@@@┐┬│≥MРУЖ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmу√■Дё┘@@@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыmд┘╒Дё┘@@@@@@@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@аыm≥┘┤√⌠│@@@@@@@╔│≥┐┬│≥MРУЖ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`└╒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`└╒@д╒и∙≈╓ё@ь╓│⌠┴├┴┘└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mс┴┌у√■@@@@@@@┐┬│≥MЯП]^@@@aaу√■┘@с┴┌≥┘≥┴│@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mф┴⌠у√■@@@@@@@┐┬│≥MЯП]^@@@aaу√■┘@ф┴⌠┘@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mц│■≈√@@@@@@@@┐┬│≥MЯП]^@@@aaу√■┘@┐│■≈√@└┘⌠@├┴⌠┘@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mЦ┴≈√д│ё√@@@@@┐┬│≥MЯП]^@@@aaЦ┴≈√@└┴@└│ё√@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mс╓∙┤д│ё√@@@@@и∙ёMЯПzП]^@@aaс╓∙┤┬┘╘╘│@└┘⌠@└│ё√@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@aa≈mу╓■Б┐│⌠┘@@@@@и∙ёMЯПzП]^@@aaу╓■┘≥┴┐@╒┐│⌠┘@`@∙≥@└┘┐┴■│⌠┴@@@@@@@@@@@@%@@@@@@@@@@≈mц≥┴ёц│■@@@@@@┐┬│≥MЯ]^@@@@aaц│■≈√@┐≥ёё√┤≥│├│ё√z@Б~Би@@@у~у√@@@@@@@@@@%@@@@@@@@@@≈mс┴┌в┤■фв@@@@@┐┬│≥MЯП]^@@@aaс┴┌≥┘≥┴│@└┘⌠@≈┤■@└┘⌠⌠│@├┴┘⌠└@≈≥√┐┘╓≥┘@@@@%@@@@@@@@@@≈mв┤■фв@@@@@@@@┐┬│≥MЯП]^@@@aa∙√■┘@≈≥√┤≥│■■│@└┘⌠⌠│@├┴┘⌠└@≈≥√┐┘└╓≥┘@@@@@%@@@@@@@@@@≈mт│╒ц│■@@@@@@@┐┬│≥MЯ]^@@@@aaц│■≈√@■│╒┐┬┘≥│ё√z@Б~и@@у~∙√@@@@@@@@@@@@@@%@@@@@@@@@@≈mт│╒у√■@@@@@@@┐┬│≥MРУЖ]^@@aaу√■┘@└┘⌠⌠│@■│╒┐┬┘≥│@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mу√■Дё┘@@@@@@@┐┬│≥MЯП]^@@@aaу√■┘@╓ё┘∙ё┘@│╓ё√≥┴╘╘│ё√@│┴@└│ё┴@@@@@@@@@@%@@@@@@@@@@≈mе≥≥√≥@@@@@@@@и∙└@^@@@@@@@aaи∙└┴┐│ё√≥┘@└┴@┘≥≥√≥┘@┘╒┘┐╓╘┴√∙┘@@@@@@@@@@%@@@@@@@@@@≈mе≥≥√≥т╒┤@@@@@┐┬│≥MРУЖ]^@@@aaт┘╒╒│┤┤┴√@└┴@┘≥≥√≥┘@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`└╒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`└╒@≈mД≈└т│╒▓@с┴▓┘д╒Mд╒mД≈└т│╒▓]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@ц√╓∙ё┘≥@╘√∙┘└MТzП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@╕ы┘ё╔│⌠@┐┬│≥MРУЖ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@ц■└@@@@@┐┬│≥MЯПРТ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@┴@@@@@@@╘√∙┘└MСzП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@ф┴∙┘@@@@@@@@@и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@≈mу√■┘Дё┘∙ё┘@┐┬│≥MЯП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@≈mв√╒┴@@@@@@@И√∙┘└MУzП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@≈mц┬┘┐▓ы╓⌠┘и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@└┐⌠`╒@≈mы┘╒≈@@@@@@и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в≥√┐@Д≈└т│╒▓@┘╖≈√≥ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`≈┴@Д≈└т│╒▓^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mД≈└т│╒▓@с┴▓┘д╒Mд╒mД≈└т│╒▓]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@┘∙└`≈┴^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@┐⌠┘│≥@д╒≈├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@Дтmсибужт@~@≈mД≈└т│╒▓KДтmс┴┌^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@Дтmфисужт@~@≈mД≈└т│╒▓KДтmф┴⌠┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@Дтmцатвж@@~@≈mД≈└т│╒▓KДтmц│■^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@ДтmтаБцат@~@≈mД≈└т│╒▓KДтmт│╒ц│■^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@ДтmтаБужт@~@≈mД≈└т│╒▓KДтmт│╒у√■^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@ДтmужтДЦе@~@≈mД≈└т│╒▓KДтmу√■Дё┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒≈├Kи∙╒┘≥ёи∙└@~@≈mД≈└т│╒▓KДтmи∙╒┘≥ёи∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒≈├Kа∙∙╓⌠⌠│@~@\√├├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@д√Ф@Mд╒≈├Kа∙∙╓⌠⌠│@~@\ж├├@а∙└@≈mД≈└т│╒▓KДтmт┘╒╒│┤┘и∙└@~@\ж├├]^@@@@@@@@@%@@@@@@@@@@@@и├@M≈mД≈└т│╒▓KДтmи∙╒┘≥ёи∙└@~@\ж├├]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д╒≈├Kц│■≈√жр@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д╒≈├Kы┘■√╔┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@е╖┘┐@Б≤⌠@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@БесецЦ@\@и∙ё√@zд╒mф┴⌠с╒ё@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@фыжт@фиссБЦППф@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@Фхеые@фсmсиб@@@~@zДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ауд@фсmфисе@@~@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@и├@MБ≤⌠Бёё@~@}ППППП}]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@д╒≈├Kц│■≈√жр@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@и├@Mд╒mф┴⌠с╒ёKфсmт│╒у√■@Ln@\┌⌠│∙▓╒]^@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ДтmтаБужт@~@д╒mф┴⌠с╒ёKфсmт│╒у√■^@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@д╒≈├Kт│╒у√■жр@~@\√∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е╖├■ё@тБрДвд^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒≈├Kт┘╒╒│┤┘и∙└@~@\ж├├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@и├@Mд╒≈├Kа∙∙╓⌠⌠│@~@\ж∙]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@⌠┘│╔┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@и├@MДтmцатвж@Ln@\┌⌠│∙▓╒]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@д╒≈├Kц│■≈√ж▓@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@и├@M≈mД≈└т│╒▓KДтmи∙╒┘≥ёи∙└@~@\ж∙]@а∙└@Mд╒≈├Kц│■≈√ж▓@~@\ж├├]^@@@@@@@@%@@@@@@@@@@@@@@@и├@Mд╒≈├Kе⌠┘ц│■и∙└@~@\ж∙]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@е⌠┘∙┐√ц│■≈┴MДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@zДтmцатвж]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@и├@MДтmцатвж@Ln@\┌⌠│∙▓╒]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@д╒≈├Kц│■≈√ж▓@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@иё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@и├@MДтmцатвж@~@\┌⌠│∙▓╒]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@ДтmеыытБг@~@}у√■┘@┐■│≈√@√┌⌠┌┴┤│ё√≥┴√K}^@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@д╒≈├Kт┘╒╒│┤┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@иё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е⌠╒┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@и├@MДтmтаБцат@~@}у}]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@ДтmеыытБг@~@}в┘≥@┴∙╒┘≥┴≥┘@┤⌠┴@│⌠ё≥┴@┐│■≈┴k@┴■≈√╒ё│≥┘@⌠√@╒ё│ё√@N%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@│@БK}^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@д╒≈├Kт┘╒╒│┤┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@иё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@и├@MДтmтаБужт@~@\┌⌠│∙▓╒]@а∙└@Mд╒≈├Kт│╒у√■ж▓@~@\ж∙]^@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@ДтmеыытБг@~@}у√■┘@■│╒┐┬┘≥│@√┌┌⌠┴┤│ё√≥┴√K}^@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@д╒≈├Kт┘╒╒│┤┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@иё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@е⌠╒┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@и├@Mд╒≈├Kт│╒у√■ж▓@~@\ж├├]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@д╒≈├Kт│╒у√■ж▓@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@≈mД≈└т│╒▓KДтmт│╒у√■@~@ДтmтаБужт^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@иё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@и├@MДтmужтДЦе@Ln@\┌⌠│∙▓╒]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@≈ц┬┘┐▓ж┌▒MДтmужтДЦе@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@z}\ДБывыф}@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@z≈mы┘╒≈]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@и├@M≈mы┘╒≈@~@}Я}]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@ДтmеыытБг@~@}у√■┘@╓ё┘∙ё┘@∙√∙@ё≥√╔│ё√K}^@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@д╒≈├Kт┘╒╒│┤┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@иё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@е⌠╒┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@≈mД≈└т│╒▓KДтmу√■Дё┘@~@ДтmужтДЦе^@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@е╖┘┐@Б≤⌠@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@БесецЦ@\@иуЦж@zд╒mф┴⌠с╒ё@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@фыжт@фиссБЦППф@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@Фхеые@фсmсиб@~@zДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmфисе@~@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmДЦеуЦе@~@zДтmужтДЦе^@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@и├@MБ≤⌠Бёё@~@}ППППП}]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@ДтmеыытБг@~@}у√■┘@╓ё┘∙ё┘@┤┴ю@┴∙╒┘≥┴ё√K}^@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@д╒≈├Kт┘╒╒│┤┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@иё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@е⌠╒┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ДтmеыытБг@~@}у√■┘@╓ё┘∙ё┘@√┌┌⌠┴┤│ё√≥┴√K}^@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@д╒≈├Kт┘╒╒│┤┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@иё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@и├@M≈mД≈└т│╒▓KДтmи∙╒┘≥ёи∙└@~@\ж├├]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@ы┘■√╔┘а⌠ё┘≥M≈mД≈└т│╒▓@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@zд╒≈├Kт┘╒╒│┤┘и∙└@@@]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е⌠╒┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@и∙╒┘≥ёа⌠ё┘≥M≈mД≈└т│╒▓@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@zд╒≈├Kт┘╒╒│┤┘и∙└@@@]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е∙└иф^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@е∙└д√^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@\и∙⌠≥@~@\жу^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в≥√┐^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в≥√┐@ы┘■√╔┘а⌠ё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в┴@ы┘■√╔┘а⌠ё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@≈mД≈└т│╒▓@@с┴▓┘д╒Mд╒mД≈└т│╒▓]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@т╒┤и∙└@@@@@@и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в┴^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mс┴┌у√■@~@Дтmсибужт^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mф┴⌠у√■@~@Дтmфисужт^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mц│■≈√@@~@Дтmцатвж@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mт│╒ц│■@@~@ДтmтаБцат^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mт│╒у√■@@~@ДтmтаБужт@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mу√■Дё┘@@~@ДтmужтДЦе^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@Д≈└ф≈≥√┐т│╒▓Mд╒и∙≈╓ё]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@и├@Mд╒и∙≈╓ёK≈mе≥≥√≥@~@\ж∙]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@ДтmеыытБг@~@}цыеаЦе@жы@ыевсаце@таБр@ё┘≥■┴∙│ё√@┴∙@┘≥≥√≥┘K}@N@@@%@@@@@@@@@@@@@@@@@@}@т│╒┐┬┘≥│@∙√∙@┴■≈√╒ё│ё│k@╔┘≥┴├┴┐│≥┘K}^@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@≈mД≈└т│╒▓KДтmт┘╒╒│┤┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@е⌠╒┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@е╖┘┐@Б≤⌠@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@десеЦе@фыжт@фиссБЦППф@Фхеые@фсmсиб@~@zДтmсибужт@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmфисе@~@zДтmфисужт@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmДЦеуЦе@~@zДтmужтДЦе^@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@≈mД≈└т│╒▓KДтmт┘╒╒│┤┘@~@}цыеаЦе@жы@ыевсаце@таБр@┘@N@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@│┤┤┴√≥∙│■┘∙ё√@дб@ё┘≥■┴│∙ё┴@┐√≥≥┘ёё│■┘∙ё┘K}^@@@@@@@@@@%@@@@@@@@@@@@@@@@@@≈mД≈└т│╒▓KДтmт┘╒╒│┤┘и∙└@~@\ж∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в≥√┐^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в≥√┐@и∙╒┘≥ёа⌠ё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в┴@и∙╒┘≥ёа⌠ё┘≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@≈mД≈└та╒▓@@с┴▓┘д╒Mд╒mД≈└т│╒▓]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@т╒┤и∙└@@@@@@и∙└^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в┴^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@д┐⌠`╒@ц√╓∙ё┘≥@И√∙┘└MУzП]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@д┐⌠`╒@Фы┘ёЕ│⌠@┐┬│≥MРУЖ]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒и∙≈╓ёK≈mс┴┌у√■@~@Дтmсибужт^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒и∙≈╓ёK≈mф┴⌠у√■@~@Дтmфисужт^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒и∙≈╓ёK≈mц│■≈√@@~@Дтmцатвж@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒и∙≈╓ёK≈mт│╒ц│■@@~@}Б}@@@@@@@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒и∙≈╓ёK≈mт│╒у√■@@~@ДтmтаБужт@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒и∙≈╓ёK≈mу√■Дё┘@@~@ДтmужтДЦе^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒и∙≈╓ёK≈mЦ┴≈√д│ё√@~@≈mД≈└т│╒▓KДтmЦ┴≈д│ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@д╒и∙≈╓ёK≈mс╓∙┤д│ё√@~@≈mД≈└т│╒▓KДтmс╓∙д│ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@aaЕ┘≥┴├┴┐│@╒┘@≈≥┴■√@╓ё┘∙ё┘@┴∙╒┘≥┴ё√@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е╖┘┐@Б≤⌠@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@БесецЦ@цжДуЦM\]@иуЦж@zц√╓∙ё┘≥@фыжт@фиссБЦППф@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@Фхеые@фсmсиб@~@zДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@ауд@фсmфисе@~@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@ауд@фсmтаБцат@~@}у}^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@и├@Mц√╓∙ё┘≥@n@П]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@Д≈└ф≈≥√┐т│╒▓Mд╒┴∙≈╓ё]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@е╖┘┐@Б≤⌠@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@ДвдаЦе@фиссБЦППф@БеЦ@фсmтаБцат@~@}Б}k@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@фсmтаБужт@~@zДтmтаБужтk@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@фсmДЦеуЦе@~@zДтmужтДЦе@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@Фхеые@@фсmсиб@~@zДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmфисе@~@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ауд@фсmтаБцат@~@}у}^@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@е⌠╒┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@aaЕ┘≥┴├┴┐│@╒┘@цатвж@┤┴юA@┴∙╒┘≥┴ё√@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@е╖┘┐@Б≤⌠@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@БесецЦ@цжДуЦM\]@иуЦж@zц√╓∙ё┘≥@фыжт@фиссБЦППф@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@Фхеые@фсmсиб@~@zДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@ауд@фсmфисе@~@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@и├@MБ≤⌠Бёё@~@}ППППП}]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@Д≈└ф≈≥√┐т│╒▓Mд╒┴∙≈╓ё]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@е╖┘┐@Б≤⌠@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@иуБеыЦ@иуЦж@фиссБЦППф@ЕасДеБM@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@zДтmсибужтk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@zДтmфисужтk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@zДтmцатвжk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@z≈mД≈└т│╒▓KДтmЦ┴≈д│ёk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@z≈mД≈└т│╒▓KДтmс╓∙д│ёk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@MБесецЦ@фсmцыиЦцат@фыжт@фиссБЦППф@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@Фхеые@фсmсиб@~@zДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ауд@фсmфисе~@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж]k@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@MБесецЦ@фсmфсдвысвгт@фыжт@фиссБЦППф@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@Фхеые@фсmсиб@~@zДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ауд@фсmфисе~@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж]k@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@MБесецЦ@фсmфсдвыцвгт@фыжт@фиссБЦППф@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@Фхеые@фсmсиб@~@zДтmсибужт@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ауд@фсmфисе~@zДтmфисужт@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@ауд@фсmцатвж@~@zДтmцатвж]k@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@}Б}k@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@zДтmтаБужтk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@zДтmужтДЦе@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@е⌠╒┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@е╖┘┐@Б≤⌠@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@децсаые@иуБmассыец@цДыБжы@фжы@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@БесецЦ@цKЦабсеmБцхетаk@цKЦабсеmуатеk@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@цKцжсДтуmуатеk@цKдаЦаmЦХвеk@цKсеугЦхk@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@цжасеБцеMцKуДтеыицmБцасеk@П]k@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@}у}@аБ@цыиЦцатk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@}@}@аБ@сибmвгтmфиесдвыжцk@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@}@}@аБ@ужтеmвгтmфиесдвыжцk@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@цаБе@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@Фхеу@цKцжсДтуmуате@~@zДтmцатвж@Цхеу@zДтmтаБцат@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@Фхеу@цжасеБцеMцЦKыДсеЦеГЦk@}@}]@Ln@}@}@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@Цхеу@}Б}@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@есБе@}у}@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@еуд@цатвжmтБацхеыаЦжk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@цаБе@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@Фхеу@цжасеБцеMцЦKыцацmуатеk@}@}]@Ln@}@}@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@Цхеу@цЦKыцацmуате@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@есБе@}@}@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@еуд@аБ@ужтеmтаБцхеыаk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@}@}@аБ@ужтеmДЦеуЦеk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@}@}@аБ@деБцmДЦеуЦеk@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@цжасеБцеMцЦKыДсеЦеГЦk@}@}]@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@фыжт@ьБХБРKБХБцжсДтуБ@ц@сефЦ@яжиу@ьБХБРKБХБфиесдБ@ф@жу@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@цKЦабсеmБцхета@~@фKЦабсеmБцхета@ауд@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@цKЦабсеmуате@@@~@фKЦабсеmуате@@@ауд@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@цKцжсДтуmуате@@~@фKцжсДтуmуате@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@сефЦ@яжиу@ьБХБРKБХБцжуЦыжсБ@цЦ@жу@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@цKЦабсеmБцхета@~@цЦKЦабсеmБцхета@ауд@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@цKЦабсеmуате@@@~@цЦKЦабсеmуате@@@ауд@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@цKцжсДтуmуате@@~@цЦKцжсДтуmуате@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@Фхеые@MцKЦабсеmБцхета@~@zДтmсибужт]@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@ауд@MцKЦабсеmуате@~@zДтmфисужт]^@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@еГец@Бьс@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@феЦцх@иуБmассыец@иуЦж@zд╒mтБрmа⌠⌠ы┘┐^@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@д√Ф@MБ≤⌠Бёё@Ln@}ППППП}]@а∙└@Mд╒≈├Kт┘╒╒│┤┘и∙└@~@\ж├├]^@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@ф┴∙┘@~@\ж├├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@д√Ф@MдБmтБрmа⌠⌠ы┘┐Kаыmы┘┤√⌠│@Ln@\┌⌠│∙▓]^@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@ф┴∙└а╓ёД╒┘≥Mд╒mтБрmа⌠⌠ы┘┐Kаыmы┘┤√⌠│@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@z≈mу√■┘Дё┘∙ё┘@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@z≈mв√╒и@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@z≈mц┬┘┐▓ы╓⌠┘@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@zф┴∙┘]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@и├@Mф┴∙┘@~@\ж∙]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@с┘│╔┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@и├@M≈mц┬┘┐▓ы╓⌠┘@~@\ж∙]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒mтБрmассы┘┐Kаыmу√■Дё┘@~@≈mу√■┘Дё┘∙ё┘^@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mс┴┌у√■@~@д╒mтБрmассы┘┐Kаыmс┴┌у√■^@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mф┴⌠у√■@~@д╒mтБрmассы┘┐Kаыmф┴⌠у√■^@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mц│■≈√@@~@д╒mтБрmассы┘┐Kаыmц│■≈√^@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mЦ┴≈√д│ё√@~@д╒mтБрmассы┘┐KаыmЦ┴≈√д│ё√^@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mс╓∙┤д│ё√@~@д╒mтБрmассы┘┐Kаыmс╓∙┤д│ё√^@@@@@@@@@@@%@@@@@@@@@@@@@@aa≈mу╓■Б┐│⌠┘@@@@@и∙ёMЯПzП]^@@aaу╓■┘≥┴┐@╒┐│⌠┘@`@∙W╚╦@└┘┐┴■│⌠┴@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mц≥┴ёц│■@~@д╒mтБрmассы┘┐Kаыmц≥┴ёц│■^@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mс┴┌в┤■фв@~@д╒mтБрmассы┘┐Kаыmс┴┌ф⌠└в≥^@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mв┤■фв@~@д╒mтБрmассы┘┐Kаыmу√■в┤■фв^@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mт│╒ц│■@~@д╒mтБрmассы┘┐Kаыmт│╒ц│■^@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mт│╒у√■@~@д╒mтБрmассы┘┐Kаыmт│╒у√■^@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@д╒и∙≈╓ёK≈mу√■Дё┘@~@д╒mтБрmассы┘┐Kаыmу√■Дё┘^@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@ц⌠┘│≥@д╒и∙≈╓ёK≈mе≥≥√≥@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@ц⌠┘│≥@д╒и∙≈╓ёK≈mе≥≥√≥т╒┤^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@Д≈└ф≈≥√┐т│╒▓Mд╒и∙≈╓ё]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@и├@Mд╒и∙≈╓ёK≈mе≥≥√≥@~@\ж∙]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@д╒mф┴⌠с╒ё@~@д╒mтБрmа⌠⌠ы┘┐^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@еГец@Бьс@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@иуБеыЦ@иуЦж@фиссБЦППф@ЕасДеБMzдБmф┴⌠с╒ё]^@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@и├@MБ≤⌠Бёё@Ln@}ППППП}]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@ДтmеыытБг@~@}и∙╒┘≥ё@дб@ё┘≥■┴∙│ё√@┐√∙@┘≥≥√≥┴k@N@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@цыеаЦе@таБр@∙√∙@┘╒┘┤╓┴ё√K}^@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@д╒≈├Kт┘╒╒│┤┘и∙└@~@\жу^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@с┘│╔┘^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@е∙└д√^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@еГец@Бьс@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@феЦцх@иуБmассыец@иуЦж@zд╒mтБрmа⌠⌠ы┘┐^@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@е∙└д√^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@е∙└и├^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в≥√┐^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в≥√┐@≈ц┬┘┐▓ж┌▒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@д┐⌠`в┴@≈ц┬┘┐▓ж┌▒^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@≈mу√■ж┌▒@┐┬│≥MЯП]@┐√∙╒ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@≈mЦ┴≈ж┌▒@┐┬│≥MЯП]@┐√∙╒ё^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@≈mы┘╒≈@@@┐┬│≥MЯ]@^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в┴^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@т√∙┴ё√≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@ц■└@~@}цхржбя@}@N@lЦ≥┴■M≈mу√■ж┌▒]@N@}@жбяЦХвеM}@N@≈mЦ┴≈ж┌▒@N@}]}^@@%@@@@@@@@@@@@@ц■└е╖┘┐Mц■└@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@@@@@@@@zlс┘∙Mц■└]]^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@ж∙`е≥≥√≥^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@@@≈mы┘╒≈@~@}Я}^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@@@@е∙└т√∙^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%@@@@@@@@е∙└`в≥√┐^@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%
