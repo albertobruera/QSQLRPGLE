@@ -33,39 +33,27 @@
              DatiNonInDB ind pos(80);                                           
              MessageInd ind pos(90) inz('0');                                   
         end-ds ;                                                                
-        dcl-ds DS_FProc qualified;                                              
-           F_Lib       char(10);                                                
-           F_File      char(10);                                                
-           F_Cam       char(10);                                                
-           F_TipDat    char(10);                                                
-           F_Lunghezza Int(10:0)  ;                                             
-           F_CrCampo   char (1);                                                
-           F_LFldPRoc  char (10);                                               
-           F_FldPRcPgm char (10);                                               
+        dcl-ds DS_FProc ExtName('FILLST00F') qualified Prefix(UF_:3);                                             
         end-ds;          
         
-        dcl-ds DS_UpdFProc ExtName('FILLST00F') qualified;                                           
+        dcl-ds DS_UpdFProc ExtName('FILLST00F') qualified Prefix(UF_:3);  
+        	UF_Message 		char(125);
+        	UF_MessageInd 	Ind;
         end-ds;       
         
-        dcl-ds DS_FProc2 qualified;                                             
-           F_Lib         char(10);                                              
-           F_File        char(10);                                              
-           F_Cam         char(10);                                              
-           F_TipDat      char(10);                                              
-           F_Lunghezza   Int(10:0);                                             
-           F_CrCampo     char (1);                                              
-           F_LibPgmFProc char (21);                                             
-        end-ds;                                                                 
-        dcl-ds Ds_Mask qualified;                                               
-           M_Lib       char(10);                                                
-           M_File      char(10);                                                
-           M_Cam       char(10);                                                
-           M_TipDat    char(10);                                                
-           M_LunDat     int(10);                                                
-           M_MasCam    char(1);                                                 
-           M_MasNom    char(256)      ;                                         
-           M_NomUte    char(10)  ;                                              
-           M_RuleText  varchar(256);                                            
+        dcl-ds DS_FProc2 ExtName('FILLST00F') qualified Prefix(UF_:3);                                             
+        end-ds;         
+        
+        dcl-ds Ds_Mask ExtName('FILLST00F') qualified Prefix(UM_:3);                                               
+           //M_Lib       char(10);                                                
+           //M_File      char(10);                                                
+           //M_Cam       char(10);                                                
+           //M_TipDat    char(10);                                                
+           //M_LunDat     int(10);                                                
+           //M_MasCam    char(1);                                                 
+           //M_MasNom    char(256)      ;                                         
+           //M_NomUte    char(10)  ;                                              
+           UM_RuleText  varchar(256);                                            
         end-ds;                                                                 
                                                                                 
         dcl-ds Ds_CrtMask qualified;                                            
@@ -75,15 +63,15 @@
            M_NumSca    Int(10);                                                 
         end-ds;                                                                 
                                                                                 
-        dcl-ds Ds_UpdMask Qualified;                                            
-          UM_Lib       char(10);                                                
-          UM_File      char(10);                                                
-          UM_Cam       char(10);                                                
-          UM_TipDat    char(10);                                                
-          UM_LunDat     int(10);                                                
-          UM_MasCam    char(1);                                                 
-          UM_MasNom    char(256);                                               
-          UM_NomUte    char(10)  ;                                              
+        dcl-ds Ds_UpdMask ExtName('FILLST00F') qualified Prefix(UM_:3);                                            
+          //UM_Lib       char(10);                                                
+          //UM_File      char(10);                                                
+          //UM_Cam       char(10);                                                
+          //UM_TipDat    char(10);                                                
+          //UM_LunDat     int(10);                                                
+          //UM_MasCam    char(1);                                                 
+          //UM_MasNom    char(256);                                               
+          //UM_NomUte    char(10)  ;                                              
         //      UM_RuleText  varchar(256);                                      
           UM_Message   char(125);                                               
           UM_InsertInd    ind  inz('0');                                        
@@ -129,10 +117,10 @@
              If (F_SCELTA = 'M');                                               
                Ds_UpdFProc.UF_Lib  = F_LIBNOM;                                  
                Ds_UpdFProc.UF_File = F_FILNOM;                                  
-               Ds_UpdFProc.UF_Cam   = F_CAMPO;                                  
+               Ds_UpdFProc.UF_Campo   = F_CAMPO;                                  
                Ds_UpdFProc.UF_CritCam  = F_CRITCAM;                             
-               Ds_UpdFProc.UF_LFldPRoc = F_LIBFLDPR;                            
-               Ds_UpdFProc.UF_FldPRcPgm = F_NOMPGMFP;                           
+               Ds_UpdFProc.UF_FprLPgm = F_LIBFLDPR;                            
+               Ds_UpdFProc.UF_FprPgm = F_NOMPGMFP;                           
                Ds_UpdFProc.UF_MessageInd = Dspf.MessageInd;                     
                UpdFProc(Ds_UpdFProc);                                           
                Dspf.MessageInd = Ds_UpdFProc.UF_MessageInd;                     
@@ -191,12 +179,12 @@
                  If (M_SCELTA = 'M');                                           
                    Ds_UpdMask.UM_Lib  = M_LIBNOM;                               
                    Ds_UpdMask.UM_File = M_FILNOM;                               
-                   Ds_UpdMask.UM_Cam   = M_CAMPO;                               
+                   Ds_UpdMask.UM_Campo   = M_CAMPO;                               
                    Ds_UpdMask.UM_MasCam  = M_MASCAM;                            
                    Ds_UpdMask.UM_MasNom = M_MASNOM;                             
                    Ds_UpdMask.UM_TipDat = M_TIPODAT;                            
                    Ds_UpdMask.UM_LunDat = M_LUNG;                               
-                   Ds_UpdMask.UM_NomUte = M_NOMUTE;                             
+                   Ds_UpdMask.UM_Utente = M_NOMUTE;                             
                                                                                 
                //    Ds_UpdMask.UM_RuleText = M_RULETEXT;                       
                    Ds_UpdMask.UM_MessageInd = Dspf.MessageInd;                  
@@ -241,13 +229,11 @@
                                                                                 
            Exec Sql                                                             
             declare MaskCsr cursor for                                          
-             select  fl_lib, fl_file, fl_campo, fl_TipDat, fl_lundat,           
-                     fl_mascam, fl_masnom, fl_utente,                           
-                     coalesce(ruletext, ' ')                                    
-               from fillst00f left join qsys2.syscontrols                       
-                 on fl_lib = table_schema and                                   
-                    fl_file = table_name  and                                   
-                    fl_campo = column_name                                      
+             select  fl.*, sc.coalesce(ruletext, ' ')                                    
+               from fillst00f fl left join qsys2.syscontrols sc                       
+                 on fl.fl_lib = sc.table_schema and                                   
+                    fl.fl_file = sc.table_name  and                                   
+                    fl.fl_campo = sc.column_name                                      
                     where                                                       
                     (fl_lib = :R_MLIB Or :R_MLIB = ' ') and                     
                     (fl_file = :R_MFILE Or :R_MFILE  = ' ')                     
@@ -316,15 +302,15 @@
              (SqlStt = '01004') And (MSK1 < 9999));                             
             Fine = *Off;                                                        
             p_PosI = 1;                                                         
-            If (Ds_Mask.M_RuleText <> ' ');                                     
+            If (Ds_Mask.UM_RuleText <> ' ');                                     
               DoW (Fine = *Off);                                                
-                FindAutUser(Ds_Mask.M_RuleText                                  
+                FindAutUser(Ds_Mask.UM_RuleText                                  
                            :p_NomeUtente                                        
                            :p_PosI                                              
                            :p_CheckRule                                         
                            :Fine);                                              
                 If (Fine = *Off);                                               
-                  Ds_Mask.M_NomUte = p_NomeUtente;                              
+                  Ds_Mask.UM_Utente = p_NomeUtente;                              
                   ValDatiSflMsk() ;                                             
                   Write MSKSFL;                                                 
                 EndIf;                                                          
@@ -358,20 +344,20 @@
          If (R_LIB <> *blanks);                                                 
            Exec Sql                                                             
             declare FProc cursor for                                            
-             select  f.fl_lib, fl_file, fl_campo, f.fl_tipdat, f.fl_lundat,     
+             select  f.fl_lib, fl_file, fl_campo, f.fl_tipdat, f.fl_lundat,    
                      case                                                       
                        when coalesce(f.fl_critcam, ' ') <> ' '                  
                        then f.fl_critcam                                        
                        else 'N'                                                 
                      end,                                                       
                      case                                                       
-                       when coalesce(f.fldPrLPgm, ' ') <> ' '                   
-                       then f.fldPrLPgm                                         
+                       when coalesce(f.fl_FprLPgm, ' ') <> ' '                   
+                       then f.fl_FprLPgm                                         
                        else ' '                                                 
                      end,                                                       
                      case                                                       
-                       when coalesce(f.fldPrcPgm, ' ') <> ' '                   
-                       then f.fldPrcPgm                                         
+                       when coalesce(f.fl_FprPgm, ' ') <> ' '                   
+                       then f.fl_FprPgm                                         
                        else ' '                                                 
                      end                                                        
                from fillst00f f right join qsys2.syscolumns c on                
@@ -380,8 +366,7 @@
                where (f.fl_lib = :R_LIB Or :R_LIB = ' ') and                    
                      (f.fl_file = :R_FILE Or :R_FILE = ' ')                     
             group by f.fl_lib, f.fl_file, f.fl_campo, f.fl_tipdat, f.fl_lundat, 
-                     f.fl_numsca,                                               
-                     f.fl_critcam, f.fldprLPgm, f.fldPrcPgm                     
+            		 f.fl_critcam, f.fl_FprLPgm, f.fl_FprPgm                     
             order by f.fl_file, f.fl_campo         ;                            
                                                                                 
            Exec Sql                                                             
@@ -427,34 +412,34 @@
         dcl-s Pos2 zoned(5:0);                                                  
 		                                                                              
                                                                                 
- 		Exec Sql                                                                     
-           SELECT CASE                                                          
-           WHEN                                                                 
-           REGEXP_LIKE(:SourceString,'[CASE][WHEN][SESSION_USER IN]','i')       
-           THEN '1'                                                             
-           ELSE '0'                                                             
-           END INTO :CheckRule                                                  
-           FROM SYSIBM.SYSDUMMY1;                                               
+ 		      Exec Sql                                                                     
+              SELECT CASE                                                          
+              WHEN                                                                 
+              REGEXP_LIKE(:SourceString,'[CASE][WHEN][SESSION_USER IN]','i')       
+              THEN '1'                                                             
+              ELSE '0'                                                             
+              END INTO :CheckRule                                                  
+              FROM SYSIBM.SYSDUMMY1;                                               
           //CheckRule = %Scan('CASE WHEN ( SESSION_USER IN':SourceString);      
-          If (CheckRule = *On);                                                 
-            EndStringUser = %Scan('THEN':SourceString);                         
-            Pos1 = %Scan('''':SourceString:PosI);                               
-            If (Pos1 < EndStringUser);                                          
-              If (Pos1 = 0);                                                    
-                EndProc = *On;                                                  
-              Else;                                                             
-                PosI = Pos1 +1;                                                 
-                Pos2 = %Scan('''':SourceString:PosI);                           
-                NomeUtente =                                                    
+             If (CheckRule = *On);                                                 
+               EndStringUser = %Scan('THEN':SourceString);                         
+               Pos1 = %Scan('''':SourceString:PosI);                               
+               If (Pos1 < EndStringUser);                                          
+                 If (Pos1 = 0);                                                    
+                   EndProc = *On;                                                  
+                 Else;                                                             
+                   PosI = Pos1 +1;                                                 
+                   Pos2 = %Scan('''':SourceString:PosI);                           
+                   NomeUtente =                                                    
                      %Subst(SourceString:Pos1+1:Pos2-(Pos1+1));                 
-                PosI  = Pos2 +1;                                                
-              EndIf;                                                            
-            Else;                                                               
-              EndProc = *On;                                                    
-            EndIf;                                                              
-          Else;                                                                 
-            EndProc = *On;                                                      
-          EndIf;                                                                
+                   PosI  = Pos2 +1;                                                
+                 EndIf;                                                            
+               Else;                                                               
+                 EndProc = *On;                                                    
+               EndIf;                                                              
+             Else;                                                                 
+               EndProc = *On;                                                      
+             EndIf;                                                                
         End-proc;                                                               
                                                                                 
         Dcl-Proc LoadLibfile ;                                                  
@@ -463,12 +448,16 @@
         DECLARE LibFil  CURSOR FOR                                              
                     SELECT C.SYSTEM_TABLE_SCHEMA, C.SYSTEM_TABLE_NAME,          
                            C.SYSTEM_COLUMN_NAME, C.DATA_TYPE, C."LENGTH",       
-                    //       COALESCE(C.NUMERIC_SCALE, 0),                      
                            CASE                                                 
                             WHEN C.HAS_FLDPROC = 'Y'                            
                             THEN 'S'                                            
                             ELSE 'N'                                            
-                           END ,                                                
+                           END AS CRITCAM,                                                
+                           ' ' AS FPRLPGM,
+                           ' ' AS FPRPGM,
+                           ' ' AS MASCAM,
+                           ' ' AS MASNOM,
+                           ' ' AS UTENTE,
                            COALESCE(F.FIELD_PROC, ' ')                          
                     FROM QSYS2.SYSCOLUMNS C LEFT JOIN QSYS2.SYSFIELDS F ON      
                           C.SYSTEM_TABLE_SCHEMA = F.SYSTEM_TABLE_SCHEMA AND     
@@ -496,55 +485,55 @@
                                                                                 
         Dcl-Proc ValDatiSfl ;                                                   
           FPRC1 = FPRC1 +1;                                                     
-          F_LIBNOM = DS_FProc.F_Lib;                                            
-          F_FILNOM = DS_FProc.F_File;                                           
-          F_CAMPO  = DS_FProc.F_Cam;                                            
-          F_TIPODAT = DS_FProc.F_TipDat;                                        
-          F_LUNG    = DS_FProc.F_Lunghezza;                                     
-          F_CRITCAM  = DS_FProc.F_CrCampo;                                      
+          F_LIBNOM = DS_FProc.UF_Lib;                                            
+          F_FILNOM = DS_FProc.UF_File;                                           
+          F_CAMPO  = DS_FProc.UF_Campo;                                            
+          F_TIPODAT = DS_FProc.UF_TipDat;                                        
+          F_LUNG    = DS_FProc.UF_LunDat;                                     
+          F_CRITCAM  = DS_FProc.UF_CritCam;                                      
           Select;                                                               
-            When (DS_FProc.F_CrCampo = 'S');                                    
+            When (DS_FProc.UF_CritCam = 'S');                                    
              F_STATO = 'CAMPO CRITT.';                                          
-            When (DS_FProc.F_CrCampo = 'N');                                    
+            When (DS_FProc.UF_CritCam = 'N');                                    
              F_STATO = 'NON CRITT.';                                            
-            When (DS_FProc.F_CrCampo = 'W');                                    
+            When (DS_FProc.UF_CritCam = 'W');                                    
              F_STATO = 'WAIT CRITT.';                                           
          EndSl;                                                                 
-          F_LIBFLDPR = DS_FProc.F_LFldPRoc;                                     
-          F_NOMPGMFP = DS_FProc.F_FldPRcPgm;                                    
+          F_LIBFLDPR = DS_FProc.UF_FprLPgm;                                     
+          F_NOMPGMFP = DS_FProc.UF_FprPgm;                                    
         End-Proc;                                                               
                                                                                 
         Dcl-Proc ValDsFproc2;                                                   
-        Ds_FProc.F_Lib       = Ds_FProc2.F_Lib;                                 
-        Ds_FProc.F_File      = Ds_FProc2.F_File;                                
-        Ds_FProc.F_Cam       = Ds_FProc2.F_Cam;                                 
-        Ds_FProc.F_TipDat    = Ds_FProc2.F_TipDat;                              
-        Ds_FProc.F_Lunghezza = Ds_FProc2.F_Lunghezza;                           
-        Ds_FProc.F_CrCampo   = Ds_FProc2.F_CrCampo;                             
+        Ds_FProc.UF_Lib       = Ds_FProc2.UF_Lib;                                 
+        Ds_FProc.UF_File      = Ds_FProc2.UF_File;                                
+        Ds_FProc.UF_Campo       = Ds_FProc2.UF_Campo;                                 
+        Ds_FProc.UF_TipDat    = Ds_FProc2.UF_TipDat;                              
+        Ds_FProc.UF_LunDat = Ds_FProc2.UF_LunDat;                           
+        Ds_FProc.UF_CritCam   = Ds_FProc2.UF_CritCam;                             
                                                                                 
-        If (Ds_Fproc2.F_LibPgmFPRoc <> *BLANKS);                                
-          p_PosI = %Scan('/':Ds_Fproc2.F_LibPgmFPRoc);                          
-          Ds_FProc.F_LFldPRoc  = %Subst(Ds_Fproc2.F_LibPgmFPRoc:1:p_Posi -1);   
-          Ds_FProc.F_FldPRcPgm = %Subst(Ds_Fproc2.F_LibPgmFPRoc:p_Posi +1:      
-                                  %Len(%Trim(Ds_Fproc2.F_LibPgmFPRoc)) - p_Posi 
+        If (Ds_Fproc2.UF_FprLPgm <> *BLANKS);                                
+          p_PosI = %Scan('/':Ds_Fproc2.UF_FprLPgm);                          
+          Ds_FProc.UF_FprLPgm  = %Subst(Ds_Fproc2.UF_FprLPgm:1:p_Posi -1);   
+          Ds_FProc.UF_FprPgm = %Subst(Ds_Fproc2.UF_FprPgm:p_Posi +1:      
+                                  %Len(%Trim(Ds_Fproc2.UF_FprLPgm)) - p_Posi 
                                         ) ;                                     
         Else;                                                                   
-          Ds_FProc.F_LFldPRoc  = *blank;                                        
-          Ds_FProc.F_FldPRcPgm = *blank;                                        
+          Ds_FProc.UF_FprLPgm  = *blank;                                        
+          Ds_FProc.UF_FprPgm = *blank;                                        
         EndIf;                                                                  
                                                                                 
         End-Proc;                                                               
         Dcl-Proc ValDatiSflMsk ;                                                
           MSK1 = MSK1 +1;                                                       
-          M_LIBNOM = DS_Mask.M_Lib;                                             
-          M_FILNOM = DS_Mask.M_File;                                            
-          M_CAMPO  = DS_Mask.M_Cam  ;                                           
-          M_MASCAM  = DS_Mask.M_MasCam;                                         
-          M_MASNOM = %Subst(DS_Mask.M_MasNom:1:35);                             
-          M_TIPODAT = Ds_Mask.M_TipDat;                                         
-          M_LUNG    = Ds_Mask.M_LunDat;                                         
-          M_NOMUTE = DS_Mask.M_NomUte;                                          
-          M_RULETEXT = Ds_Mask.M_RuleText       ;                               
+          M_LIBNOM = DS_Mask.UM_Lib;                                             
+          M_FILNOM = DS_Mask.UM_File;                                            
+          M_CAMPO  = DS_Mask.UM_Campo  ;                                           
+          M_MASCAM  = DS_Mask.UM_MasCam;                                         
+          M_MASNOM = %Subst(DS_Mask.UM_MasNom:1:35);                             
+          M_TIPODAT = Ds_Mask.UM_TipDat;                                         
+          M_LUNG    = Ds_Mask.UM_LunDat;                                         
+          M_NOMUTE = DS_Mask.UM_Utente;                                          
+          M_RULETEXT = Ds_Mask.UM_RuleText       ;                               
         End-Proc;                                                               
                                                                                 
                                                                                 
