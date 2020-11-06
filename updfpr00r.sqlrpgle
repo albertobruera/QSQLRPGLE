@@ -54,43 +54,17 @@
         dcl-ds Ds_FilLst ExtName('FILLST00F') qualified;
         end-ds;
 
-        dcl-ds Ds_UpdFproc ExtName('FILLST00F') Qualified;
+        dcl-ds Ds_UpdFproc ExtName('FILLST00F') qualified Prefix(UF_:3);
+            UF_Message      char (125);
+            UF_MessageInd   ind;
         end-ds;
-
-        dcl-ds Ds_FPR_AllRec Qualified;
-          AR_LibNom       char(10);
-          AR_FilNom       char(10);
-          AR_Campo        char(10);
-          AR_TipoDato     char(10);
-          AR_LungDato     Int(10:0);
-          AR_NumScale     Int(10:0);
-          AR_CritCam      char(1);
-          AR_LibFldPr     char(10);
-          AR_NomPgmFP     char(10);
-          AR_MasCam       char(1);
-          AR_MasNom       char(256);
-          AR_NomUte       char(10);
-          AR_DesUte       char(10);
+        dcl-ds Ds_FPR_AllRec ExtName('FILLST00F') qualified Prefix(AR_:3);
           AR_regola       varchar(256);
         end-ds;
 
-        dcl-ds p_UpdFproc LikeDs(Ds_UpdFproc);
-
-        dcl-ds DsInput Qualified;
-          p_LibNom       char(10);   //Nome Libreria
-          p_FilNom       char(10);   //Nome File
-          p_Campo        char(10);   //Nome campo del file
-          p_TipoDato     char(10);   //Tipo di dato
-          p_LungDato     Int(10:0);  //Lunghezza del dato
-          //IN_NumScale     Int(10:0);  //Numeric scale - n� decimali
-          p_CritCam      char(1);    //Campo crttografato: S=S� N=No
-          p_LibPgmFP     char(10);   //Libreria del pgm della field proceure
-          p_PgmFP        char(10);   //nome programma della field procedure
-          p_MasCam       char(1);    //Campo mascherato: S=s� N=no
-          p_MasNom       char(256);  //Nome della maschera
-          p_NomUte       char(10);   //Nome utente autorizzato ai dati
-          p_Error        Ind ;       //Indicatore di errore esecuzione
-          p_ErrorMsg     char(256);   //Messaggio di errore
+        dcl-ds DsInput ExtName('FILLST00F') qualified Prefix(In_:3);
+          In_Error        Ind ;       //Indicatore di errore esecuzione
+          In_ErrorMsg     char(256);   //Messaggio di errore
         end-ds;
         dcl-s Counter      Zoned(4:0);
         dcl-s Cmd          char(256);
@@ -110,12 +84,12 @@
         End-pi;
 
 
-            UF_LIBNOM = p_UpdFproc.UF_LIBNOM;
-            UF_FILNOM = p_UpdFproc.UF_FILNOM;
+            UF_LIBNOM = p_UpdFproc.UF_LIB   ;
+            UF_FILNOM = p_UpdFproc.UF_FILE;
             UF_CAMPO  = p_UpdFproc.UF_CAMPO;
             UF_CRITCAM = p_UpdFproc.UF_CRITCAM;
-            UF_LIBFLDP = p_UpdFproc.UF_LIBFLDPR;
-            UF_PGMFLDP = p_UpdFproc.UF_NOMPGMFP;
+            UF_LIBFLDP = p_UpdFproc.UF_FPRLPGM;
+            UF_PGMFLDP = p_UpdFproc.UF_FPRPGM;
             Dspf.Annulla = *Off;
             Dspf.MessageInd = *Off;
           DoW (Dspf.Annulla = *Off And p_UpdFproc.UF_MessageInd = *Off);
@@ -175,8 +149,8 @@
         End-Pi;
               Exec Sql
                Update FILLST00F set FL_CRITCAM = :UF_CRITCAM,
-                                  FLDPRLPGM  = :UF_LIBFLDP,
-                                  FLDPRCPGM  = :UF_PGMFLDP
+                                  FL_FPRLPGM  = :UF_LIBFLDP,
+                                  FL_FPRPGM  = :UF_PGMFLDP
                             where FL_LIB  = :UF_LIBNOM and
                                   FL_FILE = :UF_FILNOM and
                                   FL_CAMPO = :p_UpdFproc.UF_CAMPO;
@@ -186,39 +160,39 @@
                 Dspf.MessageInd = *ON;
               EndIf;
               If (Dspf.MessageInd = *Off);
-                DsInput.p_LibNom = %Trim(UF_LIBNOM);
-                DsInput.p_FilNom = %Trim(UF_FILNOM);
-                DsInput.p_Campo  = %Trim(UF_CAMPO);
-                DsInput.p_CritCam = %Trim(UF_CRITCAM);
+                DsInput.In_Lib  = %Trim(UF_LIBNOM);
+                DsInput.In_File = %Trim(UF_FILNOM);
+                DsInput.In_Campo  = %Trim(UF_CAMPO);
+                DsInput.In_CritCam = %Trim(UF_CRITCAM);
                 If (UF_CRITCAM = 'S');
-                   CheckDimFile(DsInput.p_LibNom
-                                :DsInput.p_FilNom
-                                :DsInput.p_Campo
-                                :DsInput.p_CritCam
-                                :DsInput.p_LibPgmFP
-                                :DsInput.p_PgmFP
-                                :DsInput.p_Error
-                                :DsInput.p_ErrorMsg);
+                   CheckDimFile(DsInput.In_Lib 
+                                :DsInput.In_File
+                                :DsInput.In_Campo
+                                :DsInput.In_CritCam
+                                :DsInput.In_FprLPgm
+                                :DsInput.In_FprPgm
+                                :DsInput.In_Error
+                                :DsInput.In_ErrorMsg);
                 EndIf;
-                If (DsInput.p_CritCam = 'W');
+                If (DsInput.In_CritCam = 'W');
                   Exec Sql
-                   Update FILLST00F set FL_CRITCAM = :DsInput.p_CritCam
+                   Update FILLST00F set FL_CRITCAM = :DsInput.In_CritCam
                             where FL_LIB  = :UF_LIBNOM and
                                   FL_FILE = :UF_FILNOM and
                                   FL_CAMPO = :UF_CAMPO;
                   If (SqlStt <> '00000');
-                     DsInput.p_Error = *On;
-                     DsInput.p_ErrorMsg = 'UPDATE FILLST00F +
+                     DsInput.In_Error = *On;
+                     DsInput.In_ErrorMsg = 'UPDATE FILLST00F +
                                   terminato con errori. Verificare.';
                   EndIf;
                 Else;
                   UpdFprocMask(DsInput) ;
                 EndIf;
-                If (DsInput.p_Error <> *Off);
-                  UF_ERRMSG = DsInput.p_ErrorMsg;
+                If (DsInput.In_Error <> *Off);
+                  UF_ERRMSG = DsInput.In_ErrorMsg;
                   Dspf.MessageInd = *ON;
                 EndIf;
-                If ((SqlStt <> '00000') or (DsInput.p_Error = *On)) And
+                If ((SqlStt <> '00000') or (DsInput.In_Error = *On)) And
                    (Dspf.MessageInd = *Off);
                    UF_ERRMSG = 'Alter table per drop field procedure +
                    terminato con errori. Verificare.';
@@ -297,7 +271,7 @@
                   If (Fine = *On);
                     Leave;
                   EndIf;
-                  Ds_FPR_AllRec.AR_NomUte = p_NomeUtente;
+                  Ds_FPR_AllRec.AR_Utente = p_NomeUtente;
                   Ds_FilLst = Ds_FPR_AllRec;
                   Clear Ds_FilLSt.FL_DESUTE;
                   EXEC SQL
@@ -322,17 +296,17 @@
                 EndIf;
               EndDo;
               If (UF_CRITCAM = 'N') And (Dspf.MessageInd = *Off);
-                DsInput.p_LibNom = %Trim(UF_LIBNOM);
-                DsInput.p_FilNom = %Trim(UF_FILNOM);
-                DsInput.p_Campo  = %Trim(UF_CAMPO);
-                DsInput.p_CritCam = %Trim(UF_CRITCAM);
+                DsInput.In_Lib  = %Trim(UF_LIBNOM);
+                DsInput.In_File = %Trim(UF_FILNOM);
+                DsInput.In_Campo  = %Trim(UF_CAMPO);
+                DsInput.In_CritCam = %Trim(UF_CRITCAM);
                 UpdFprocMask(DsInput) ;
               Else;
               If (Dspf.MessageInd = *Off);
               EXEC SQL
                 DECLARE ALTTABCSR CURSOR FOR
-                  SELECT FL.FL_LIB, FL.FL_FILE, FL.FL_CAMPO, FL.FLDPRLPGM,
-                         FLDPRCPGM
+                  SELECT FL.FL_LIB, FL.FL_FILE, FL.FL_CAMPO, FL.FL_FPRLPGM,
+                         FL_FPRPGM
                               FROM FILLST00F FL LEFT JOIN QSYS2.SYSFIELDS FI
                                 ON FL.FL_LIB = FI.SYSTEM_TABLE_SCHEMA AND
                                    FL.FL_FILE = FI.SYSTEM_TABLE_NAME  AND
@@ -342,46 +316,46 @@
                                          FL.FL_CRITCAM = 'S' AND
                                          FI.FIELD_PROC IS NULL
                                   GROUP BY FL.FL_LIB, FL.FL_FILE, FL.FL_CAMPO,
-                                           FL.FLDPRLPGM, FL.FLDPRCPGM;
+                                           FL.FL_FPRLPGM, FL.FL_FPRPGM;
               EXEC SQL
                 OPEN ALTTABCSR;
               EXEC SQL
-                FETCH ALTTABCSR INTO :DsInput.p_LibNom ,
-                                     :DsInput.p_FilNom ,
-                                     :DsInput.p_Campo ,
-                                     :DsInput.p_LibPgmFP ,
-                                     :DsInput.p_PgmFP    ;
-                 //DsInput.p_CritCam = 'S';
+                FETCH ALTTABCSR INTO :DsInput.In_Lib ,
+                                     :DsInput.In_File ,
+                                     :DsInput.In_Campo ,
+                                     :DsInput.In_FprLPgm ,
+                                     :DsInput.In_FprPgm    ;
+                 //DsInput.In_CritCam = 'S';
                  Dow (SqlStt = '00000') or (SqlStt = '01004');
-                   CheckDimFile(DsInput.p_LibNom
-                                :DsInput.p_FilNom
-                                :DsInput.p_Campo
-                                :DsInput.p_CritCam
-                                :DsInput.p_LibPgmFP
-                                :DsInput.p_PgmFP
-                                :DsInput.p_Error
-                                :DsInput.p_ErrorMsg);
-                   If (DsInput.p_CritCam = 'W');
+                   CheckDimFile(DsInput.In_Lib
+                                :DsInput.In_File
+                                :DsInput.In_Campo
+                                :DsInput.In_CritCam
+                                :DsInput.In_FprLPgm
+                                :DsInput.In_FprPgm
+                                :DsInput.In_Error
+                                :DsInput.In_ErrorMsg);
+                   If (DsInput.In_CritCam = 'W');
                      Exec Sql
                        UPDATE FILLST00F SET FL_CRITCAM = 'W'
-                        WHERE FL_LIB   =  :DsInput.p_LibNom  AND
-                              FL_FILE  =  :DsInput.p_FilNom  AND
-                              FL_CAMPO =  :DsInput.p_Campo ;
+                        WHERE FL_LIB   =  :DsInput.In_Lib  AND
+                              FL_FILE  =  :DsInput.In_File  AND
+                              FL_CAMPO =  :DsInput.In_Campo ;
                    Else;
                      UpdFprocMask(DsInput);
                    EndIf;
 
-                   If (DsInput.p_Error = *On);
-                      UF_ERRMSG = DsInput.p_ErrorMsg;
+                   If (DsInput.In_Error = *On);
+                      UF_ERRMSG = DsInput.In_ErrorMsg;
                       Dspf.MessageInd = *ON;
                       Leave;
                    EndIf;
                    EXEC SQL
-                     FETCH ALTTABCSR INTO :DsInput.p_LibNom ,
-                                          :DsInput.p_FilNom ,
-                                          :DsInput.p_Campo ,
-                                          :DsInput.p_LibPgmFP ,
-                                          :DsInput.p_PgmFP    ;
+                     FETCH ALTTABCSR INTO :DsInput.In_Lib  ,
+                                          :DsInput.In_File ,
+                                          :DsInput.In_Campo ,
+                                          :DsInput.In_FprLPgm ,
+                                          :DsInput.In_FprPgm    ;
                  EndDo;
 
                If (Dspf.MessageInd = *On);
