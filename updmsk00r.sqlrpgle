@@ -338,23 +338,23 @@
                 									  :UM_CAMPO,
                 									  :p_UpdMask.UM_TipDat,
                 									  :p_UpdMask.UM_LunDat,
-                            0,
-                           (SELECT FL_CRITCAM FROM FILLST00F
+        							                   0,
+                          							  (SELECT FL_CRITCAM FROM FILLST00F
                 									  	WHERE FL_LIB = :UM_LIBNOM
                 									  	  AND FL_FILE= :UM_FILNOM
                 									  	  AND FL_CAMPO = :UM_CAMPO),
-                									   (SELECT FLDPRLPGM FROM FILLST00F
+                									   (SELECT FL_FPRLPGM FROM FILLST00F
                 									  	WHERE FL_LIB = :UM_LIBNOM
                 									  	  AND FL_FILE= :UM_FILNOM
                 									  	  AND FL_CAMPO = :UM_CAMPO),
-                									   (SELECT FLDPRCPGM FROM FILLST00F
+                									   (SELECT FL_FPRPGM FROM FILLST00F
                 									  	WHERE FL_LIB = :UM_LIBNOM
                 									  	  AND FL_FILE= :UM_FILNOM
                 									  	  AND FL_CAMPO = :UM_CAMPO),
                 									  'S',
                 									  :UM_MASNOM,
                 									  :UM_NOMUTE,
-                           ' '
+               								          ' '
                 									 );
                 Else;
                  Exec Sql
@@ -426,8 +426,8 @@
                      If (DsInput.In_Error = *On);
                        Ds_FilLst = Ds_MSK_AllRec;
                        EXEC SQL
-                  				  		INSERT INTO FILLST00F VALUES(:DS_FilLst);
-                       If (SqlStt <> '00000');
+  	 			  		INSERT INTO FILLST00F VALUES(:DS_FilLst);
+                        If (SqlStt <> '00000');
                          UM_ERRMSG = 'Insert DB terminato con errori, +
                                  		CREATE MASK non eseguito.';
                          Dspf.MessageInd = *ON;
