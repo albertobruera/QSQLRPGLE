@@ -336,7 +336,6 @@
                  If (Pos2 < EndStringUser);
                    NomeUtente =
                      %Subst(p_Ds_SysControls.RuleText:Pos1+1:Pos2-(Pos1+1));
-                   Pos1  = Pos2   ;
         //Se p_DsInput.IN_MasCam = 'N' "salto" l'utente da rimuovere
                    If (p_DsInput.IN_MasCam = 'N') And
                      (p_DsInput.IN_NomUte = NomeUtente);
@@ -347,6 +346,7 @@
                             '''' + ', ' + '''';
                    NbrUser = NbrUser +1;
                  EndIf;
+                 Pos1  = Pos2   ;
                 Enddo;
                 If (p_DsInput.IN_MasCam = 'S');
                   CmdMsk1 = %Trim(CmdMSk1) + %Trim(p_DsInput.IN_NomUte) + '''';
@@ -376,8 +376,7 @@
                    If (SqlStt = '00000');
                        p_DsInput.OUT_ErrorMsg ='CREATE OR REPLACE MASK per +
                              aggiunta/rimozione utente +
-                             terminato con errori. SQLSTT = ' + SqlStt +
-                             ' verificare';
+                             terminato correttamente SQLSTT = ' + SqlStt ;
                        p_DsInput.OUT_Error = *On;
                        SendPgmMsg( 'CPF9897'
                              :'QCPFMSG *LIBL'
