@@ -46,15 +46,15 @@
              MasNomOK     ind pos(60);
              MessageInd   ind pos(90);
         End-Ds;
-        dcl-ds Ds_UpdMask Qualified;
-          UM_Lib       char(10);
-          UM_File      char(10);
-          UM_Cam       char(10);
-          UM_TipDat    char(10);
-          UM_LunDat     Int(10);
-          UM_MasCam    char(1);
-          UM_MasNom    char(256)      ;
-          UM_NomUte    char(10)  ;
+        dcl-ds Ds_UpdMask ExtName('FILLST00F') qualified Prefix(UM_:3);
+          //UM_Lib       char(10);
+          //UM_File      char(10);
+          //UM_Cam       char(10);
+          //UM_TipDat    char(10);
+          //UM_LunDat     Int(10);
+          //UM_MasCam    char(1);
+          //UM_MasNom    char(256)      ;
+          //UM_NomUte    char(10)  ;
          //          UM_RuleText  varchar(256);
           UM_Message     char(125);
           UM_InsertInd    ind;
@@ -68,38 +68,38 @@
         end-ds;
         dcl-ds Ds_FilLst ExtName('FILLST00F') qualified;
         end-ds;
-        dcl-ds Ds_MSK_AllRec Qualified;
-          AR_LibNom       char(10);
-          AR_FilNom       char(10);
-          AR_Campo        char(10);
-          AR_TipoDato     char(10);
-          AR_LungDato     Int(10:0);
-          AR_NumScale     Int(10:0);
-          AR_CritCam      char(1);
-          AR_LibFldPr     char(10);
-          AR_NomPgmFP     char(10);
-          AR_MasCam       char(1);
-          AR_MasNom       char(256);
-          AR_NomUte       char(10);
-          AR_DesUte       char(10);
+        dcl-ds Ds_MSK_AllRec ExtName('FILLST00F') qualified Prefix(AR_:3);
+          //AR_LibNom       char(10);
+          //AR_FilNom       char(10);
+          //AR_Campo        char(10);
+          //AR_TipoDato     char(10);
+          //AR_LungDato     Int(10:0);
+          //AR_NumScale     Int(10:0);
+          //AR_CritCam      char(1);
+          //AR_LibFldPr     char(10);
+          //AR_NomPgmFP     char(10);
+          //AR_MasCam       char(1);
+          //AR_MasNom       char(256);
+          //AR_NomUte       char(10);
+          //AR_DesUte       char(10);
           AR_regola       varchar(256);
         end-ds;
 
-        dcl-ds DsInput Qualified;
-          p_LibNom       char(10);   //Nome Libreria
-          p_FilNom       char(10);   //Nome File
-          p_Campo        char(10);   //Nome campo del file
-          p_TipoDato     char(10);   //Tipo di dato
-          p_LungDato     Int(10:0);  //Lunghezza del dato
-          //p_NumScale     Int(10:0);  //Numeric scale - nr decimali
-          p_CritCam      char(1);    //Campo crttografato: S=SI   N=No
-          p_LibPgmFP     char(10);   //Libreria del pgm della field proceure
-          p_PgmFP        char(10);   //nome programma della field procedure
-          p_MasCam       char(1);    //Campo mascherato: S=I  N=no
-          p_MasNom       char(256);  //Nome della maschera
-          p_NomUte       char(10);   //Nome utente autorizzato ai dati
-          p_Error        Ind ;       //Indicatore di errore esecuzione
-          p_ErrorMsg     char(256);   //Messaggio di errore
+        dcl-ds DsInput ExtName('FILLST00F') qualified Prefix(IN_:3);
+          //p_LibNom       char(10);   //Nome Libreria
+          //p_FilNom       char(10);   //Nome File
+          //p_Campo        char(10);   //Nome campo del file
+          //p_TipoDato     char(10);   //Tipo di dato
+          //p_LungDato     Int(10:0);  //Lunghezza del dato
+            //p_NumScale     Int(10:0);  //Numeric scale - nr decimali
+          //p_CritCam      char(1);    //Campo crttografato: S=SI   N=No
+          //p_LibPgmFP     char(10);   //Libreria del pgm della field proceure
+          //p_PgmFP        char(10);   //nome programma della field procedure
+          //p_MasCam       char(1);    //Campo mascherato: S=I  N=no
+          //p_MasNom       char(256);  //Nome della maschera
+          //p_NomUte       char(10);   //Nome utente autorizzato ai dati
+          In_Error        Ind ;       //Indicatore di errore esecuzione
+          In_ErrorMsg     char(256);   //Messaggio di errore
         end-ds;
         dcl-ds p_UpdMask LikeDs(Ds_UpdMask);
 
@@ -120,10 +120,10 @@
             clear Dspf;
             UM_LIBNOM = p_UpdMask.UM_Lib;
             UM_FILNOM = p_UpdMask.UM_File;
-            UM_CAMPO  = p_UpdMask.UM_Cam;
+            UM_CAMPO  = p_UpdMask.UM_Campo;
             UM_MASCAM = p_UpdMask.UM_MasCam;
             UM_MASNOM = p_UpdMask.UM_MasNom;
-            UM_NOMUTE = p_UpdMask.UM_NomUte;
+            UM_NOMUTE = p_UpdMask.UM_Utente;
             Dspf.InsertInd = p_UpdMask.UM_InsertInd;
             Dspf.Annulla = *off;
           DoW (Dspf.Annulla = *Off And p_UpdMask.UM_MessageInd = *Off);
@@ -206,7 +206,7 @@
                        Dspf.MessageInd = *On;
                        Iter;
                     Else;
-                       p_UpdMask.UM_NomUte = UM_NOMUTE;
+                       p_UpdMask.UM_Utente = UM_NOMUTE;
                        Exec Sql
                          SELECT * INTO :Ds_FilLst
                            FROM FILLST00F
@@ -215,7 +215,7 @@
                             AND FL_CAMPO = :UM_CAMPO
                             AND FL_UTENTE = :UM_NOMUTE;
                         If (SqlStt = '00000');
-                          UM_ERRMSG = 'Nome utente giâ inserito.';
+                          UM_ERRMSG = 'Nome utente giï¿½ inserito.';
                           Dspf.MessageInd = *On;
                           Iter;
                         EndIf;
@@ -249,18 +249,18 @@
           MsgInd      Ind;
         End-Pi;
 
-                DsInput.p_LibNom = UM_LIBNOM;
-                DsInput.p_FilNom = UM_FILNOM;
-                DsInput.p_Campo  = UM_CAMPO ;
-                DsInput.p_MasCam  = UM_MASCAM;
-                DsInput.p_MasNom  = UM_MASNOM ;
-                DsInput.p_NomUte  = UM_NOMUTE;
-                DsInput.p_TipoDato  = p_UpdMask.UM_TipDat;
-                DsInput.p_LungDato  = p_UpdMask.UM_LunDat;
+                DsInput.In_Lib = UM_LIBNOM;
+                DsInput.In_File = UM_FILNOM;
+                DsInput.In_Campo  = UM_CAMPO ;
+                DsInput.In_MasCam  = UM_MASCAM;
+                DsInput.In_MasNom  = UM_MASNOM ;
+                DsInput.In_Utente  = UM_NOMUTE;
+                DsInput.In_TipDat  = p_UpdMask.UM_TipDat;
+                DsInput.In_LunDat  = p_UpdMask.UM_LunDat;
 
                 UpdFprocMask(DsInput);
 
-                If (DsInput.p_Error = *On);
+                If (DsInput.In_Error = *On);
                   UM_ERRMSG = 'CREATE OR REPLACE MASK o ADD CONSTRAINT' +
                   ' terminato in errore.ta. Verificare.';
                   p_UpdMask.UM_MessageInd = *On;
@@ -295,14 +295,14 @@
           Dcl-s Counter Zoned(5:0);
           Dcl-s WRetVal char(256);
 
-            DsInput.p_LibNom = UM_LIBNOM;
-            DsInput.p_FilNom = UM_FILNOM;
-            DsInput.p_Campo  = UM_CAMPO ;
-            DsInput.p_MasCam  = 'S'       ;
-            DsInput.p_MasNom  = UM_MASNOM ;
-            DsInput.p_NomUte  = UM_NOMUTE;
-            DsInput.p_TipoDato = p_UpdMask.UM_TipDat;
-            DsInput.p_LungDato = p_UpdMask.UM_LunDat;
+            DsInput.In_Lib  = UM_LIBNOM;
+            DsInput.In_File = UM_FILNOM;
+            DsInput.In_Campo  = UM_CAMPO ;
+            DsInput.In_MasCam  = 'S'       ;
+            DsInput.In_MasNom  = UM_MASNOM ;
+            DsInput.In_Utente  = UM_NOMUTE;
+            DsInput.In_TipDat = p_UpdMask.UM_TipDat;
+            DsInput.In_LunDat = p_UpdMask.UM_LunDat;
 
 		          //Verifica se primo utente inserito	
             Exec Sql
@@ -323,7 +323,7 @@
                                  AND FL_CAMPO = :UM_CAMPO
                                  AND FL_MASCAM = 'N';
             Else;
-               //Verifica se CAMPO giâ  inserito
+               //Verifica se CAMPO giï¿½ inserito
                Exec Sql
                		SELECT COUNT(*) INTO :Counter FROM FILLST00F
                  		WHERE FL_LIB = :UM_LIBNOM
@@ -405,25 +405,25 @@
                        Leave;
                      EndIf;
                      If (p_CheckRule = *On);
-                      Ds_MSK_ALLRec.AR_NomUte = p_NomeUtente;
+                      Ds_MSK_ALLRec.AR_Utente = p_NomeUtente;
 
-                      DsInput.p_LibNom = Ds_MSK_ALLRec.AR_LibNom;
-                      DsInput.p_FilNom = Ds_MSK_ALLRec.AR_FilNom;
-                      DsInput.p_Campo  = Ds_MSK_ALLRec.AR_Campo;
-                      DsInput.p_TipoDato = Ds_MSK_ALLRec.AR_TipoDato;
-   		                 DsInput.p_LungDato = Ds_MSK_ALLRec.AR_LungDato;
-              //p_NumScale     Int(10:0);  //Numeric scale - nî?? decimali
-                      DsInput.p_CritCam = Ds_MSK_ALLRec.AR_CritCam;
-                      DsInput.p_LibPgmFP = Ds_MSK_ALLRec.AR_LibFldPr;
-                      DsInput.p_PgmFP = Ds_MSK_ALLRec.AR_NomPgmFP;
-                      DsInput.p_MasCam = Ds_MSK_ALLRec.AR_MasCam;
-                      DsInput.p_MasNom = Ds_MSK_ALLRec.AR_MasNom;
-                      DsInput.p_NomUte = Ds_MSK_ALLRec.AR_NomUte;
-                      Clear DsInput.p_Error ;
-                      Clear DsInput.p_ErrorMsg;
+                      DsInput.In_Lib = Ds_MSK_ALLRec.AR_Lib;
+                      DsInput.In_File = Ds_MSK_ALLRec.AR_File;
+                      DsInput.In_Campo  = Ds_MSK_ALLRec.AR_Campo;
+                      DsInput.In_TipDat = Ds_MSK_ALLRec.AR_TipDat;
+   		                 DsInput.In_LunDat = Ds_MSK_ALLRec.AR_LunDat;
+              //p_NumScale     Int(10:0);  //Numeric scale - nï¿½?? decimali
+                      DsInput.In_CritCam = Ds_MSK_ALLRec.AR_CritCam;
+                      DsInput.In_FprLPgm = Ds_MSK_ALLRec.AR_FprLPgm;
+                      DsInput.In_FprPgm = Ds_MSK_ALLRec.AR_FprPgm;
+                      DsInput.In_MasCam = Ds_MSK_ALLRec.AR_MasCam;
+                      DsInput.In_MasNom = Ds_MSK_ALLRec.AR_MasNom;
+                      DsInput.In_Utente = Ds_MSK_ALLRec.AR_Utente;
+                      Clear DsInput.In_Error ;
+                      Clear DsInput.In_ErrorMsg;
                       UpdFprocMask(DsInput);
                      EndIf;
-                     If (DsInput.p_Error = *On);
+                     If (DsInput.In_Error = *On);
                        Ds_FilLst = Ds_MSK_AllRec;
                        EXEC SQL
                   				  		INSERT INTO FILLST00F VALUES(:DS_FilLst);
