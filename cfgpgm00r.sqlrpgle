@@ -3,7 +3,7 @@
                                             sfile(MSKSFL:MSK1)  ;               
                                                                                 
         dcl-pr UpdFproc;                                                        
-          p_Ds_UpdFProc Like(DS_UpdFPRoc);                                      
+          p_Ds_UpdFProc Like(DS_UpdFProc);                                      
         end-pr;                                                                 
                                                                                 
         dcl-pr UpdMask;                                                         
@@ -42,17 +42,11 @@
            F_CrCampo   char (1);                                                
            F_LFldPRoc  char (10);                                               
            F_FldPRcPgm char (10);                                               
-        end-ds;                                                                 
-        dcl-ds DS_UpdFProc qualified;                                           
-           UF_Lib       char(10);                                               
-           UF_File      char(10);                                               
-           UF_Cam       char(10);                                               
-           UF_CritCam   char (1);                                               
-           UF_LFldPRoc  char (10);                                              
-           UF_FldPRcPgm char (10);                                              
-           UF_Message   char (125);                                             
-           UF_MessageInd   ind;                                                 
-        end-ds;                                                                 
+        end-ds;          
+        
+        dcl-ds DS_UpdFProc ExtName('FILLST00F') qualified;                                           
+        end-ds;       
+        
         dcl-ds DS_FProc2 qualified;                                             
            F_Lib         char(10);                                              
            F_File        char(10);                                              

@@ -54,16 +54,9 @@
         dcl-ds Ds_FilLst ExtName('FILLST00F') qualified;
         end-ds;
 
-        dcl-ds Ds_UpdFproc Qualified;
-          UF_LibNom       char(10);
-          UF_FilNom       char(10);
-          UF_Campo        char(10);
-          UF_CritCam      char(1);
-          UF_LibFldPr     char(10);
-          UF_NomPgmFP     char(10);
-          UF_Message      char (125);
-          UF_MessageInd   ind;
+        dcl-ds Ds_UpdFproc ExtName('FILLST00F') Qualified;
         end-ds;
+
         dcl-ds Ds_FPR_AllRec Qualified;
           AR_LibNom       char(10);
           AR_FilNom       char(10);
@@ -89,11 +82,11 @@
           p_Campo        char(10);   //Nome campo del file
           p_TipoDato     char(10);   //Tipo di dato
           p_LungDato     Int(10:0);  //Lunghezza del dato
-          //IN_NumScale     Int(10:0);  //Numeric scale - n° decimali
-          p_CritCam      char(1);    //Campo crttografato: S=Së N=No
+          //IN_NumScale     Int(10:0);  //Numeric scale - nï¿½ decimali
+          p_CritCam      char(1);    //Campo crttografato: S=Sï¿½ N=No
           p_LibPgmFP     char(10);   //Libreria del pgm della field proceure
           p_PgmFP        char(10);   //nome programma della field procedure
-          p_MasCam       char(1);    //Campo mascherato: S=së N=no
+          p_MasCam       char(1);    //Campo mascherato: S=sï¿½ N=no
           p_MasNom       char(256);  //Nome della maschera
           p_NomUte       char(10);   //Nome utente autorizzato ai dati
           p_Error        Ind ;       //Indicatore di errore esecuzione
