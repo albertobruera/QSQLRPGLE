@@ -55,7 +55,7 @@
         end-ds;
 
         dcl-ds Ds_UpdFproc ExtName('FILLST00F') qualified Prefix(UF_:3);
-            UF_Message      char (125);
+            UF_Message      char (7);
             UF_MessageInd   ind;
         end-ds;
         dcl-ds Ds_FPR_AllRec ExtName('FILLST00F') qualified Prefix(AR_:3);
@@ -101,16 +101,13 @@
             Resp = '0';
             If ((UF_LIBFLDP = *blanks) Or (UF_PGMFLDP = *blanks)) And
                 (UF_CRITCAM = 'S');
-               UF_ERRMSG = 'Libreria pgm e nome pgm per field procedure +
-                            obbligatori';
+               MSGID = 'ENC0001';
                Dspf.MessageInd = *On;
-               Iter;
+                   Iter;
             EndIf;
             If ((UF_LIBFLDP <> *blanks) Or (UF_PGMFLDP <> *blanks)) And
                (UF_CRITCAM = 'N');
-               UF_ERRMSG = 'Per un campo NON CRITTOGRAFATO, +
-                            libreria pgm e nome pgm per field procedure +
-                            devono essere *blank.';
+               MSGID = 'ENC0002';
                Dspf.MessageInd = *On;
                Iter;
             EndIf;
@@ -120,7 +117,7 @@
               pCheckObj(w_LibFile
                         :Resp);
               If (Resp = '1');
-                UF_ERRMSG = ExceptionType+ ExceptionNum + ' ' + ExceptionData;
+                MSGID = 'ENC0023';
                 Dspf.MessageInd = *On;
                 Iter;
               EndIf;
@@ -155,8 +152,7 @@
                                   FL_FILE = :UF_FILNOM and
                                   FL_CAMPO = :p_UpdFproc.UF_CAMPO;
               If (SqlStt <> '00000');
-                UF_ERRMSG = 'Update DB terminato con errori, +
-                ALTER TABLE per  FIELD PROCEDURE non eseguito.';
+                MSGID = 'ENC0003';
                 Dspf.MessageInd = *ON;
               EndIf;
               If (Dspf.MessageInd = *Off);
@@ -164,16 +160,16 @@
                 DsInput.In_File = %Trim(UF_FILNOM);
                 DsInput.In_Campo  = %Trim(UF_CAMPO);
                 DsInput.In_CritCam = %Trim(UF_CRITCAM);
-                If (UF_CRITCAM = 'S');
-                   CheckDimFile(DsInput.In_Lib 
-                                :DsInput.In_File
-                                :DsInput.In_Campo
-                                :DsInput.In_CritCam
-                                :DsInput.In_FprLPgm
-                                :DsInput.In_FprPgm
-                                :DsInput.In_Error
-                                :DsInput.In_ErrorMsg);
-                EndIf;
+                DsInput.In_FprLPgm  = %Trim(UF_LIBFLDP);
+                DsInput.In_FprPgm = %Trim(UF_PGMFLDP);
+                CheckDimFile(DsInput.In_Lib
+                            :DsInput.In_File
+                            :DsInput.In_Campo
+                            :DsInput.In_CritCam
+                            :DsInput.In_FprLPgm
+                            :DsInput.In_FprPgm
+                            :DsInput.In_Error
+                            :DsInput.In_ErrorMsg);
                 If (DsInput.In_CritCam = 'W');
                   Exec Sql
                    Update FILLST00F set FL_CRITCAM = :DsInput.In_CritCam
@@ -182,27 +178,22 @@
                                   FL_CAMPO = :UF_CAMPO;
                   If (SqlStt <> '00000');
                      DsInput.In_Error = *On;
-                     DsInput.In_ErrorMsg = 'UPDATE FILLST00F +
-                                  terminato con errori. Verificare.';
+                     MSGID = 'ENC0004';
                   EndIf;
                 Else;
                   UpdFprocMask(DsInput) ;
                 EndIf;
-                If (DsInput.In_Error <> *Off);
-                  UF_ERRMSG = DsInput.In_ErrorMsg;
-                  Dspf.MessageInd = *ON;
-                EndIf;
+
                 If ((SqlStt <> '00000') or (DsInput.In_Error = *On)) And
                    (Dspf.MessageInd = *Off);
-                   UF_ERRMSG = 'Alter table per drop field procedure +
-                   terminato con errori. Verificare.';
+                   MSGID = 'ENC0005';
                    Dspf.MessageInd = *ON;
+
                 Else;
-                   p_UpdFProc.UF_Message = 'Update e alter table +
-                   per field procedure  terminati correttamente.';
-                   p_UpdFproc.UF_MessageInd = *ON;
+                    MSGID = 'ENC0006';
+                    p_UpdFproc.UF_MessageInd = *ON;
                 EndIf;
-           EndiF;
+              EndiF;
         End-Proc;
 
         Dcl-Proc InsertAlter;
@@ -214,7 +205,6 @@
                 DECLARE INS_ALLREC CURSOR FOR
                 SELECT C.SYSTEM_TABLE_SCHEMA, C.SYSTEM_TABLE_NAME,
                            C.SYSTEM_COLUMN_NAME, C.DATA_TYPE, C."LENGTH",
-                           COALESCE(C.NUMERIC_SCALE, 0),
                        CASE
                          WHEN C.SYSTEM_COLUMN_NAME = :UF_CAMPO THEN :UF_CRITCAM
                          WHEN COALESCE(F.FIELD_PROC, ' ') <> ' ' THEN 'S'
@@ -289,10 +279,9 @@
                   EXEC SQL
                     FETCH INS_ALLREC INTO :Ds_FPR_AllRec;
                 Else;
-                  PRCERRMSG='Insert DB terminato con errori, ALTER TABLE per +
-                             FIELD PROCEDURE non eseguito.';
+                  MSGID = 'ENC0007';
                   Dspf.MessageInd = *ON;
-                  Iter ;
+                  Leave ;
                 EndIf;
               EndDo;
               If (UF_CRITCAM = 'N') And (Dspf.MessageInd = *Off);
@@ -305,8 +294,8 @@
               If (Dspf.MessageInd = *Off);
               EXEC SQL
                 DECLARE ALTTABCSR CURSOR FOR
-                  SELECT FL.FL_LIB, FL.FL_FILE, FL.FL_CAMPO, FL.FL_FPRLPGM,
-                         FL_FPRPGM
+                  SELECT FL.FL_LIB, FL.FL_FILE, FL.FL_CAMPO, FL.FL_CRITCAM,
+                         FL.FL_FPRLPGM, FL_FPRPGM
                               FROM FILLST00F FL LEFT JOIN QSYS2.SYSFIELDS FI
                                 ON FL.FL_LIB = FI.SYSTEM_TABLE_SCHEMA AND
                                    FL.FL_FILE = FI.SYSTEM_TABLE_NAME  AND
@@ -316,13 +305,15 @@
                                          FL.FL_CRITCAM = 'S' AND
                                          FI.FIELD_PROC IS NULL
                                   GROUP BY FL.FL_LIB, FL.FL_FILE, FL.FL_CAMPO,
-                                           FL.FL_FPRLPGM, FL.FL_FPRPGM;
+                                           FL.FL_CRITCAM, FL.FL_FPRLPGM,
+                                           FL.FL_FPRPGM;
               EXEC SQL
                 OPEN ALTTABCSR;
               EXEC SQL
                 FETCH ALTTABCSR INTO :DsInput.In_Lib ,
                                      :DsInput.In_File ,
                                      :DsInput.In_Campo ,
+                                     :DsInput.In_CritCam,
                                      :DsInput.In_FprLPgm ,
                                      :DsInput.In_FprPgm    ;
                  //DsInput.In_CritCam = 'S';
@@ -346,7 +337,7 @@
                    EndIf;
 
                    If (DsInput.In_Error = *On);
-                      UF_ERRMSG = DsInput.In_ErrorMsg;
+                      MSGID = DsInput.In_ErrorMsg;
                       Dspf.MessageInd = *ON;
                       Leave;
                    EndIf;
@@ -357,19 +348,21 @@
                                           :DsInput.In_FprLPgm ,
                                           :DsInput.In_FprPgm    ;
                  EndDo;
-
-               If (Dspf.MessageInd = *On);
-                 p_UpdFproc.UF_Message='Update e alter table +
-                      per field procedure  terminato correttamente.';
-                 p_UpdFproc.UF_MessageInd = *ON;
-               EndIf;
-
-              Else;
-                 p_UpdFproc.UF_Message='Update e alter table +
-                   per field procedure  terminato con errori. Verificare.';
-                 p_UpdFproc.UF_MessageInd = *ON;
               EndIf;
+
              EndIf;
+
+             If (Dspf.MessageInd = *On);
+                 p_UpdFproc.UF_Message='ENC0009';
+                 p_UpdFproc.UF_MessageInd = *ON;
+             Else;
+                 p_UpdFproc.UF_Message='ENC0008';
+                 p_UpdFproc.UF_MessageInd = *ON;
+             EndIf;
+
+
+
+
         End-Proc;
 
         Dcl-Proc pCheckObj;
