@@ -144,18 +144,6 @@
              p_UpdFProc  LikeDs(Ds_UpdFproc);
              MsgInd      Ind;
         End-Pi;
-              Exec Sql
-               Update FILLST00F set FL_CRITCAM = :UF_CRITCAM,
-                                  FL_FPRLPGM  = :UF_LIBFLDP,
-                                  FL_FPRPGM  = :UF_PGMFLDP
-                            where FL_LIB  = :UF_LIBNOM and
-                                  FL_FILE = :UF_FILNOM and
-                                  FL_CAMPO = :p_UpdFproc.UF_CAMPO;
-              If (SqlStt <> '00000');
-                MSGID = 'ENC0003';
-                Dspf.MessageInd = *ON;
-              EndIf;
-              If (Dspf.MessageInd = *Off);
                 DsInput.In_Lib  = %Trim(UF_LIBNOM);
                 DsInput.In_File = %Trim(UF_FILNOM);
                 DsInput.In_Campo  = %Trim(UF_CAMPO);
@@ -170,30 +158,26 @@
                             :DsInput.In_FprPgm
                             :DsInput.In_Error
                             :DsInput.In_ErrorMsg);
-                If (DsInput.In_CritCam = 'W');
+                If (DsInput.In_CritCam <> 'W');
+                  UpdFprocMask(DsInput) ;
+                EndIf;
+
+                If (DsInput.In_Error = *off);
                   Exec Sql
                    Update FILLST00F set FL_CRITCAM = :DsInput.In_CritCam
                             where FL_LIB  = :UF_LIBNOM and
                                   FL_FILE = :UF_FILNOM and
                                   FL_CAMPO = :UF_CAMPO;
-                  If (SqlStt <> '00000');
-                     DsInput.In_Error = *On;
-                     MSGID = 'ENC0004';
-                  EndIf;
-                Else;
-                  UpdFprocMask(DsInput) ;
                 EndIf;
 
                 If ((SqlStt <> '00000') or (DsInput.In_Error = *On)) And
                    (Dspf.MessageInd = *Off);
-                   MSGID = 'ENC0005';
+                   p_UpdFproc.UF_Message = 'ENC0005';
                    Dspf.MessageInd = *ON;
-
                 Else;
-                    MSGID = 'ENC0006';
-                    p_UpdFproc.UF_MessageInd = *ON;
+                   p_UpdFproc.UF_Message = 'ENC0006';
+                   p_UpdFproc.UF_MessageInd = *ON;
                 EndIf;
-              EndiF;
         End-Proc;
 
         Dcl-Proc InsertAlter;
@@ -211,15 +195,17 @@
                          ELSE 'N'
                        END AS CRITCAM,
                            CASE
-                         WHEN C.SYSTEM_COLUMN_NAME = :UF_CAMPO THEN :UF_LIBFLDP
-                         WHEN COALESCE(F.FIELD_PROC, ' ') <> ' ' THEN
-                                  LIBSST(F.FIELD_PROC)
+                         WHEN C.SYSTEM_COLUMN_NAME = :UF_CAMPO
+                         THEN :UF_LIBFLDP
+                         WHEN COALESCE(F.FIELD_PROC, ' ') <> ' '
+                         THEN LIBSST(F.FIELD_PROC)
                          ELSE ' '
                        END LIB_PGM_FIELDPROC,
                        CASE
-                         WHEN C.SYSTEM_COLUMN_NAME = :UF_CAMPO THEN :UF_PGMFLDP
-                         WHEN COALESCE(F.FIELD_PROC, ' ') <> ' ' THEN
-                                  FILSST(F.FIELD_PROC)
+                         WHEN C.SYSTEM_COLUMN_NAME = :UF_CAMPO
+                         THEN :UF_PGMFLDP
+                         WHEN COALESCE(F.FIELD_PROC, ' ') <> ' '
+                         THEN FILSST(F.FIELD_PROC)
                          ELSE ' '
                        END NOME_PGM_FIELDPROC,
                        CASE
