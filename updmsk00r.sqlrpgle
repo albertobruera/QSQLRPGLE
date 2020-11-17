@@ -405,13 +405,26 @@
                             p_UpdMask.UM_MessageInd = *On;
                     EndIf;
                 Else;
+
                  Exec Sql
                         DECLARE INS_ALLREC CURSOR FOR
                            SELECT C.TABLE_SCHEMA, C.TABLE_NAME,
                            C.COLUMN_NAME, C.DATA_TYPE, C."LENGTH",
-                           'N' AS CRITCAM,
-                           ' ' AS LIB_PGM_FIELDPROC,
-                           ' ' AS NOME_PGM_FIELDPROC,
+                           CASE
+                             WHEN COALESCE(F.FIELD_PROC, ' ') <> ' '
+                             THEN 'S'
+                             ELSE 'N'
+                           END AS CRITCAM,
+                           CASE
+                             WHEN COALESCE(F.FIELD_PROC, ' ') <> ' '
+                             THEN LIBSST(F.FIELD_PROC)
+                             ELSE ' '
+                           END AS LIB_PGM_FIELDPROC,
+                           CASE
+                             WHEN COALESCE(F.FIELD_PROC, ' ') <> ' '
+                             THEN OBJSST(F.FIELD_PROC)
+                             ELSE ' '
+                           END AS NOME_PGM_FIELDPROC,
                            CASE
                              WHEN C.COLUMN_NAME = :UM_CAMPO
                              THEN :UM_MASCAM
@@ -527,7 +540,7 @@
                 EndDo;
                 If (Dspf.messageInd = *Off);
                     p_UpdMask.UM_MessageInd = *On;
-                    p_UpdMask.UM_Message = 'MSK0007';
+                    p_UpdMask.UM_Message = MSGID;
                 EndIf;
                 EndIf;
 
