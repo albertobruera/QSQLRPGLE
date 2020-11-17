@@ -364,7 +364,6 @@
                      end,
                      ' ',
                      ' ',
-                     ' ',
                      ' '
                      from fillst00f f right join qsys2.syscolumns c on
                     f.fl_lib = c.table_schema and
