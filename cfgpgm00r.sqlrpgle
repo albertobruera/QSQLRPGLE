@@ -124,7 +124,9 @@
 
            Dow (Dspf.exit = *Off) And (Dspf.SflFproc = *Off);
              Dspf.EnableDrop =*On;
+             Dspf.DatiNonInDb = *Off;
              LoadSflMsk();
+             Write Dummy;
              Write PIEDEMSK;
              ExFmt MSKCTL;
              Dspf.MessageInd = *Off;
@@ -148,6 +150,7 @@
                Iter;
              EndIF;
              If (Dspf.InsertInd = *On);
+                   Clear Ds_UpdMask;
                    Ds_UpdMask.UM_Lib  = M_LIBNOM;
                    Ds_UpdMask.UM_File = M_FILNOM;
                    Ds_UpdMask.UM_TipDat = M_TIPODAT;
@@ -181,7 +184,9 @@
                  EndIf;
                  If (Dspf.MessageInd = *Off);
                    Readc MSKSFL;
+
                  Else;
+
                    Leave;
                  EndIf;
                EndDo;
@@ -215,22 +220,28 @@
             EndIf;
            Dspf.DatiNonInDb = *Off;
            Exec Sql
-            declare MaskCsr cursor for
-             select  fl.*, coalesce(sc.ruletext, ' ')
-               from fillst00f fl left join qsys2.syscontrols sc
-                 on fl.fl_lib = sc.table_schema and
+            DECLARE MaskCsr CURSOR FOR
+             SELECT  FL.*, COALESCE(SC.RULETEXT, ' '),
+             CASE
+                WHEN REGEXP_LIKE(COALESCE(SC.RULETEXT, ' '),'[CASE][WHEN] +
+                    [SESSION_USER IN]','i')
+                THEN '1'
+                ELSE '0'
+             End
+               FROM FILLST00F fl LEFT JOIN QSYS2.SYSCONTROLS SC
+                 ON fl.fl_lib = sc.table_schema and
                     fl.fl_file = sc.table_name  and
                     fl.fl_campo = sc.column_name
-                    where
-                    (fl_lib = :R_MLIB Or :R_MLIB = ' ') and
+                    WHERE
+                    (fl_lib = :R_MLIB Or :R_MLIB = ' ') AND
                     (fl_file = :R_MFILE Or :R_MFILE  = ' ')
-                order by fl_file, fl_campo;
+                ORDER BY FL.FL_FILE, FL.FL_CAMPO;
 
            Exec Sql
-            Open MaskCsr;
+            OPEN MaskCsr;
 
            Exec Sql
-            Fetch MaskCsr Into :DS_Mask;
+            FETCH MaskCsr INTO :DS_Mask;
            DoW (SqlStt = '00000');
              ValDatiSflMsk() ;
              Write MSKSFL;
@@ -362,6 +373,7 @@
                        then f.fl_FprPgm
                        else ' '
                      end,
+                     ' ',
                      ' ',
                      ' ',
                      ' '
