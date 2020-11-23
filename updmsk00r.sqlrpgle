@@ -8,7 +8,6 @@
           SourceString varChar(256);
           NomeUtente   Char(10);
           p_Posi       Zoned(5:0);
-          p_CheckRule   Ind;
           EndProc      Ind;
         End-pr;
         Dcl-Pr UpdateAlter;
@@ -37,6 +36,7 @@
           p_NomeCampo    char(10);
           p_TipoDato     char(10);
           p_LunDat       packed(10:0);
+          p_MasNom       char(35);
         end-pr;
 
         Dcl-ds Dspf qualified ;
@@ -121,12 +121,12 @@
             EndIf;
             If (UM_CAMPO <> *blanks) And (UM_MASNOM = *blanks);
               Exec Sql
-                 SELECT SUBSTRING(COALESCE(FL.FL_MASNOM, ' '), 1, 35),
+                 SELECT COALESCE(FL.FL_MASNOM, ' '),
                     SC.DATA_TYPE, SC.LENGTH
                     INTO :p_UpdMask.UM_MasNom,
                          :p_UpdMask.UM_TipDat,
                          :p_UpdMask.UM_LunDat
-                   FROM FILLST00F FL RIGHT JOIN QSYS2.SYSCOLUMNS SC
+                   FROM FILLST00F FL RIGHT JOIN QSYS2/SYSCOLUMNS SC
                    ON FL.FL_LIB = SC.SYSTEM_TABLE_SCHEMA AND
                       FL.FL_FILE = SC.SYSTEM_TABLE_NAME AND
                       FL.FL_CAMPO = SC.SYSTEM_COLUMN_NAME
@@ -140,7 +140,7 @@
                         Iter;
                     EndIf;
                     If (p_UpdMask.Um_MasNom <> ' ');
-                      UM_MASNOM = p_UpdMask.Um_MasNom ;
+                      UM_MASNOM = %SubSt(p_UpdMask.Um_MasNom:1:35) ;
                       Dspf.MasNomOk = *On;
 
                     EndIf;
@@ -154,35 +154,16 @@
                             :UM_FILNOM
                             :UM_CAMPO
                             :UM_TIPODAT
-                            :UM_LUNDAT);
+                            :UM_LUNDAT
+                            :UM_MASNOM);
                  If (UM_CAMPO <> *blanks);
+                    Dspf.CampoOk = *On;
                     p_UpdMask.UM_TipDat = UM_TIPODAT;
                     p_UpdMask.UM_LunDat = UM_LUNDAT;
                     p_UpdMask.Um_Campo  = UM_CAMPO;
-                    Dspf.CampoOk = *On;
-                    Exec Sql
-                    SELECT SUBSTRING(COALESCE(FL.FL_MASNOM, ' '), 1, 35),
-                    SC.DATA_TYPE, SC.LENGTH
-                   INTO :p_UpdMask.Um_MasNom,
-                        :p_UpdMask.UM_TipDat,
-                        :p_UpdMask.UM_LunDat
-                   FROM FILLST00F FL RIGHT JOIN QSYS2/SYSCOLUMNS SC
-                   ON FL.FL_FILE = SC.SYSTEM_TABLE_SCHEMA AND
-                      FL.FL_FILE = SC.SYSTEM_TABLE_NAME AND
-                      FL.FL_CAMPO = SC.SYSTEM_COLUMN_NAME
-                    WHERE SC.SYSTEM_TABLE_SCHEMA = :UM_LIBNOM
-                    AND SC.SYSTEM_TABLE_NAME   = :UM_FILNOM
-                    AND SC.SYSTEM_COLUMN_NAME = :UM_CAMPO
-                    FETCH FIRST ROW ONLY;
-                    If (SqlStt = '00000');
-                      If (p_UpdMask.Um_MasNom <> ' ');
-                        UM_MASNOM = p_UpdMask.Um_MasNom;
-                        Dspf.MasNomOk = *On;
-                      EndIf;
-                    Else;
-                      MSGID = 'MSK0009';
-                      Dspf.MessageInd = *On;
-                      Iter;
+                    p_UpdMask.Um_MasNom  = UM_MASNOM;
+                    If (UM_MASNOM <> *Blanks);
+                        Dspf.MasNomOK = *On;
                     EndIf;
                  EndIf;
                  Iter;
@@ -234,6 +215,7 @@
                          If (SqlStt = '00000');
                            MSGID = 'MSK0005';
                            Dspf.MessageInd = *On;
+                           Dspf.UtenteInd = *Off;
                            Iter;
                          EndIf;
                        EndIf;
@@ -278,10 +260,16 @@
                 DsInput.In_TipDat  = p_UpdMask.UM_TipDat;
                 DsInput.In_LunDat  = p_UpdMask.UM_LunDat;
 
+                Exec Sql
+                SELECT COUNT(*) INTO :Counter
+                  FROM FILLST00F WHERE FL_LIB = :UM_LIBNOM
+                                  AND FL_FILE = :UM_FILNOM;
+                If (Counter > 0);
+
                 UpdFprocMask(DsInput);
 
-                If (DsInput.In_Error = *On);
-                  UM_ERRMSG = 'MSK0006';
+                If (DsInput.IN_ErrorMsg <> 'MSK0007');
+                  UM_ERRMSG = DsInput.IN_ErrorMsg;
                   p_UpdMask.UM_MessageInd = *On;
                 Else;
                   If (UM_MASCAM = 'S');
@@ -293,19 +281,44 @@
                                      AND FL_FILE = :UM_FILNOM
                                      AND FL_CAMPO = :UM_CAMPO;
                   Else;
+                    //Verifico se ultimo utente
                     Exec Sql
-                     DELETE FROM FILLST00F WHERE FL_LIB = :UM_LIBNOM
-                                           AND FL_FILE = :UM_FILNOM
-                                          AND FL_CAMPO = :UM_CAMPO
-                                         AND FL_UTENTE = :UM_NOMUTE;
+                        SELECT COUNT(*) INTO :Counter
+                          FROM FILLST00F
+                         WHERE FL_LIB = :UM_LIBNOM
+                           AND FL_FILE = :UM_FILNOM
+                           AND FL_CAMPO = :UM_CAMPO;
+                    If (Counter > 1);
+                        Exec Sql
+                          DELETE FROM FILLST00F WHERE FL_LIB = :UM_LIBNOM
+                                           AND FL_FILE  = :UM_FILNOM
+                                           AND FL_CAMPO = :UM_CAMPO
+                                           AND FL_UTENTE = :UM_NOMUTE;
+                    Else;
+                        Exec Sql
+                          UPDATE FILLST00F SET FL_MASCAM = 'N',
+                                               FL_MASNOM = ' ',
+                                               FL_UTENTE = ' '
+                                     WHERE FL_LIB = :UM_LIBNOM
+                                           AND FL_FILE  = :UM_FILNOM
+                                           AND FL_CAMPO = :UM_CAMPO
+                                           AND FL_UTENTE = :UM_NOMUTE;
+
+                    EndIf;
                   EndIf;
                   If (SqlStt = '00000');
                     p_UpdMask.UM_Message = 'MSK0007';
                     p_UpdMask.UM_MessageInd = *On;
                   Else;
                     p_UpdMask.UM_Message = 'MSK0006';
-                    p_UpdMask.UM_MessageInd = *On;
+                    Dspf.MessageInd = *On;
                   EndIf;
+                EndIf;
+
+                Else;
+                    InsertAll(p_UpdMask.UM_Message
+                             :p_UpdMask.UM_MessageInd);
+
                 EndIf;
         End-Proc;
 
@@ -325,8 +338,7 @@
             DsInput.In_Utente  = UM_NOMUTE;
             DsInput.In_TipDat = p_UpdMask.UM_TipDat;
             DsInput.In_LunDat = p_UpdMask.UM_LunDat;
-
-                          //Verifica se primo utente inserito
+            //Verifica se primo utente inserito
             Exec Sql
                SELECT COUNT(*) INTO :Counter FROM FILLST00F
                  WHERE FL_LIB = :UM_LIBNOM
@@ -356,18 +368,12 @@
                 p_UpdMask.UM_Message = 'MSK0006';
                 p_UpdMask.UM_MessageInd = *On;
               EndIf;
+
             Else;
-               //Verifica se CAMPO già inserito
-               Exec Sql
-                        SELECT COUNT(*) INTO :Counter FROM FILLST00F
-                                WHERE FL_LIB = :UM_LIBNOM
-                                AND FL_FILE = :UM_FILNOM
-                                AND FL_CAMPO = :UM_CAMPO;
-                If (Counter > 0);
                     UpdFprocMask(Dsinput);
                     If (DsInput.In_ErrorMsg = 'MSK0007');
-                    Exec Sql
-                      INSERT INTO FILLST00F VALUES(
+                        Exec Sql
+                         INSERT INTO FILLST00F VALUES(
                            :UM_LIBNOM,
                            :UM_FILNOM,
                            :UM_CAMPO,
@@ -393,18 +399,41 @@
                            :UM_NOMUTE,
                            ' '
                            );
-                        If (SqlStt = '00000');
-                            p_UpdMask.UM_Message = 'MSK0007';
-                            p_UpdMask.UM_MessageInd = *On;
-                        Else;
-                            p_UpdMask.UM_Message = 'MSK0006';
-                            p_UpdMask.UM_MessageInd = *On;
-                        EndIf;
-                    Else;
-                            p_UpdMask.UM_Message = 'MSK0006';
-                            p_UpdMask.UM_MessageInd = *On;
                     EndIf;
-                Else;
+
+                        If (SqlStt = '00000') And
+                           (DsInput.In_ErrorMsg = 'MSK0007');
+                           p_UpdMask.UM_MessageInd = *On;
+                           p_UpdMask.UM_Message = 'MSK0007';
+                        Else;
+                           MSGID = DsInput.In_ErrorMsg;
+                           Dspf.MessageInd = *On;
+                        EndIf;
+
+
+                    EndIf;
+        End-Proc;
+
+        Dcl-Proc pCheckObj;
+        Dcl-Pi pCheckObj;
+           p_NomObj char(10) const;
+           p_TipObj char(10) const;
+           p_Resp   char(1) ;
+        End-Pi;
+           Monitor;
+             Cmd = 'CHKOBJ ' + %Trim(p_NomObj) + ' OBJTYPE(' + p_TipObj + ')';
+             CmdExec(Cmd
+                    :%Len(Cmd));
+           On-Error;
+             p_Resp = '1';
+           EndMon;
+        End-Proc;
+
+        Dcl-Proc InsertAll;
+        Dcl-Pi InsertAll;
+           p_Message    char(7);
+           p_MessageInd Ind;
+        End-Pi;
 
                  Exec Sql
                         DECLARE INS_ALLREC CURSOR FOR
@@ -428,6 +457,8 @@
                            CASE
                              WHEN C.COLUMN_NAME = :UM_CAMPO
                              THEN :UM_MASCAM
+                             WHEN COALESCE(CT.RULETEXT, ' ') <> ' '
+                             THEN 'S'
                              ELSE 'N'
                            END CAMPO_MSACHERATO,
                            CASE
@@ -457,108 +488,99 @@
                         OPEN INS_ALLREC;
                     EXEC SQL
                         FETCH INS_ALLREC INTO :Ds_MSK_AllRec;
-               Clear CntUser;
                DoW (SqlStt = '00000') And (Dspf.MessageInd = *Off);
                   Fine = *Off;
-                If (DS_MSK_AllRec.AR_MasNom <> ' ');
-                     Dow (Fine = *Off);
+                  p_PosI = 1;
+                  Clear CntUser;
+                If (Ds_MSK_AllRec.AR_MasCam = 'S');
+
+                     Dow (Fine = *Off) And (Dspf.MessageInd = *Off);
                         FindAutUser(Ds_MSK_AllRec.AR_Regola
                                    :p_NomeUtente
                                    :p_PosI
-                                   :p_CheckRule
                                    :Fine);
-                      If (Fine = *On);
-                        If (CntUser = 0);
-                            DsInput = Ds_MSK_ALLRec;
-                            Clear DsInput.In_Error ;
-                            Clear DsInput.In_ErrorMsg;
-                            UpdFprocMask(DsInput);
-                            If (DsInput.IN_ErrorMsg <> 'MSK0007'); // se proc no
-                                MSGID = 'MSK0006';
-                                Dspf.MessageInd = *On;
-                                Leave;
+                        If (Fine = *On);
+                            If (CntUser = 0);
+                                DsInput = Ds_MSK_ALLRec;
+                                Clear DsInput.In_Error ;
+                                Clear DsInput.In_ErrorMsg;
+                            //Se inserisco dati in DB vuoto e rilevo che campo
+                            //già critt non riesegue la set fieldproc
+                                If (DsInput.IN_CritCam = 'S');
+                                  DsInput.IN_CritCam = 'N';
+                                  UpdFprocMask(DsInput);
+                                //Ma la reimposto per la insert nel DB
+                                  DsInput.IN_CritCam = 'S';
+                                Else;
+                                  UpdFprocMask(DsInput);
+                                EndIf;
+                                If (DsInput.IN_ErrorMsg <> 'MSK0007'); //term OK
+                                  p_message = DsInput.IN_ErrorMsg;
+                                  Dspf.MessageInd = *On;
+                                  Leave;
+                                EndIf;
+
+                                Ds_FilLst = Ds_MSK_AllRec;
+                                EXEC SQL
+                                  INSERT INTO FILLST00F VALUES(:Ds_FilLst);
+                                If (SqlStt <> '00000');
+                                    p_message = 'MSK0006';
+                                    Dspf.MessageInd = *ON;
+                                EndIf;
                             EndIf;
-                            Ds_FilLst = Ds_MSK_AllRec;
-                            EXEC SQL
-                                INSERT INTO FILLST00F VALUES(:Ds_FilLst);
-                            If (SqlStt <> '00000');
-                              MSGID = 'MSK0006';
-                              Dspf.MessageInd = *ON;
-                              Leave;
-                            EndIf;
+                            Leave;
                         EndIf;
-                        Leave;
-                      EndIf;
-                      If (p_CheckRule = *On);
-                           Ds_MSK_ALLRec.AR_Utente = p_NomeUtente;
-                           DsInput = Ds_MSK_ALLRec;
-                           Clear DsInput.In_Error ;
-                           Clear DsInput.In_ErrorMsg;
-                           UpdFprocMask(DsInput);
-                           If (DsInput.In_ErrorMsg <> 'MSK0007');
-                             MSGID = DsInput.In_ErrorMsg;
-                             Dspf.MessageInd = *ON;
-                             Leave;
-                           EndIf;
-                           CntUser = CntUser +1;
-                      EndIf;
-                      If (DsInput.In_Error = *Off);
-                       EXEC SQL
-                        INSERT INTO FILLST00F VALUES(:Ds_FilLst);
+                        CntUser = CntUser +1;
+                        Ds_MSK_AllRec.AR_Utente = p_NomeUtente;
+                        Ds_FilLst = Ds_MSK_AllRec;
+                        EXEC SQL
+                            INSERT INTO FILLST00F VALUES(:Ds_FilLst);
                         If (SqlStt <> '00000');
-                          MSGID = 'MSK0006';
-                          Dspf.MessageInd = *ON;
-                          Leave;
+                         p_message = 'MSK0006';
+                         Dspf.MessageInd = *ON;
                         EndIf;
-                      EndIf;
                      EndDo;
+
+         //             Clear DsInput.In_Error ;
+         //             Clear DsInput.In_ErrorMsg;
+         //             If (Ds_MSK_ALLRec.AR_Utente = UM_NOMUTE) And
+         //                (Ds_MSK_ALLRec.AR_MasNom = UM_MASNOM) And
+         //                (Dspf.MessageInd = *Off);
+         //                  DsInput = Ds_MSK_ALLRec;
+         //                  UpdFprocMask(DsInput);
+         //                  If (DsInput.In_ErrorMsg <> 'MSK0007');
+         //                    MSGID = DsInput.In_ErrorMsg;
+         //                    Dspf.MessageInd = *ON;
+         //                  EndIf;
+         //             EndIf;
+         //             DS_FilLst = Ds_MSK_AllRec;
+         //             If (Dspf.MessageInd = *Off) And (Fine = *Off);
+         //              EXEC SQL
+         //               INSERT INTO FILLST00F VALUES(:Ds_FilLst);
+         //               If (SqlStt <> '00000');
+         //                 MSGID = 'MSK0006';
+         //                 Dspf.MessageInd = *ON;
+         //                 Leave;
+         //               EndIf;
+         //             EndIf;
                 Else;
-
-                     If (Ds_MSK_ALLRec.AR_MasCam = 'S');
-                         DsInput = Ds_MSK_ALLRec;
-
-                         Clear DsInput.In_Error ;
-                         Clear DsInput.In_ErrorMsg;
-                         UpdFprocMask(DsInput);
-                         If (DsInput.In_ErrorMsg <> 'MSK0007');
-                             MSGID = DsInput.In_ErrorMsg;
-                             Dspf.MessageInd = *ON;
-                             Leave;
-                         EndIf;
-                     EndIf;
                      Ds_FilLst = Ds_MSK_AllRec;
                      EXEC SQL
                       INSERT INTO FILLST00F VALUES(:Ds_FilLst);
                         If (SqlStt <> '00000');
-                         MSGID = 'MSK0007';
+                         p_message = 'MSK0006';
                          Dspf.MessageInd = *ON;
                          Leave;
                        EndIf;
-                  EndIf;
+                EndIf;
                   EXEC SQL
                       FETCH INS_ALLREC INTO :Ds_MSK_AllRec;
                 EndDo;
-                If (Dspf.messageInd = *Off);
-                    p_UpdMask.UM_MessageInd = *On;
-                    p_UpdMask.UM_Message = MSGID;
-                EndIf;
-                EndIf;
+                        If (Dspf.MessageInd = *ON);
+                            p_Message = p_message;
+                        Else;
+                            p_Message = 'MSK0007';
+                        EndIf;
+                        p_MessageInd = *On;
 
-          EndIf;
-
-        End-Proc;
-
-        Dcl-Proc pCheckObj;
-        Dcl-Pi pCheckObj;
-           p_NomObj char(10) const;
-           p_TipObj char(10) const;
-           p_Resp   char(1) ;
-        End-Pi;
-           Monitor;
-             Cmd = 'CHKOBJ ' + %Trim(p_NomObj) + ' OBJTYPE(' + p_TipObj + ')';
-             CmdExec(Cmd
-                    :%Len(Cmd));
-           On-Error;
-             p_Resp = '1';
-           EndMon;
         End-Proc;
