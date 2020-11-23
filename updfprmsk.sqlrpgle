@@ -65,11 +65,10 @@
                      MaskField(p_DsInput);
 			       EndIf;
        	 Else;
-             p_DsInput.OUT_ErrorMsg = 'Parametro obbligatorio mancante. +
-                                      Verificare.';
+             p_DsInput.OUT_ErrorMsg = 'ENC0024';
              SendPgmMsg( 'CPF9897'
-                     :'QCPFMSG *LIBL'
-                     :p_DsInput.OUT_ErrorMsg
+                     :'ENCMSKSMGF ALBERTODTA'
+                     :'ENC0024'
                      : %len( %trimr(p_DsInput.OUT_ErrorMsg) )
                      : '*INFO': '*'
                      : 0: MsgKey: ErrorCode );
@@ -103,6 +102,10 @@
                          : %len( %trimr(Crypt_DsInput.OUT_ErrorMsg) )
                          : '*INFO': '*': 0
                          :MsgKey: ErrorCode );
+            Else;
+              Crypt_DsInput.OUT_ErrorMsg = 'ENC0008';
+              Crypt_DsInput.OUT_Error = *Off;
+
             EndIf;
           ElseIf (Crypt_DsInput.IN_CritCam = 'N');
             Drop_Cmd = 'ALTER TABLE  ' + %Trim(Crypt_DsInput.IN_Lib) + '/' +
@@ -123,6 +126,9 @@
                          : %len( %trimr(Crypt_DsInput.OUT_ErrorMsg) )
                          : '*INFO': '*': 0
                          : MsgKey: ErrorCode );
+            Else;
+              Crypt_DsInput.OUT_ErrorMsg = 'ENC0008';
+              Crypt_DsInput.OUT_Error = *Off;
             EndIf;
           EndIf;
         End-Proc;
@@ -275,8 +281,8 @@
                     Msk_DsInput.Out_Error = *Off;
                     Msk_DsInput.Out_ErrorMsg = 'MSK0007'; // Term OK
                 Else;
-                    Msk_DsInput.Out_Error = *Off;
-                    Msk_DsInput.Out_ErrorMsg = 'MSK0006'; // Term OK
+                    Msk_DsInput.Out_Error = *On;
+                    Msk_DsInput.Out_ErrorMsg = 'MSK0006'; // Term NO OK
                 EndIf;
         End-Proc;
 
@@ -290,7 +296,7 @@
             RuleText char(256);
             RuleOk Ind;
         End-Ds;
-        Dcl-s CmdMsk1 char(256);
+        Dcl-s CmdMsk1 char(2048);
         Dcl-s NomeUtente char(10);
         Dcl-s WRetVal    char(256);
         Dcl-s PosI       Zoned(5:0);
