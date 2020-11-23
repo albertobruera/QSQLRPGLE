@@ -20,11 +20,9 @@
         End-pr;
         Dcl-Pr UpdateAlter;
              p_UpdFProc  LikeDs(Ds_UpdFproc);
-             MsgInd      Ind;
         End-Pr;
         Dcl-Pr InsertAlter;
              p_UpdFProc  LikeDs(Ds_UpdFproc);
-             MsgInd      Ind;
         End-Pr;
         dcl-pr UpdFprocMask;
           p_DsInput LikeDs(DsInput);
@@ -129,11 +127,9 @@
                       FL_FILE   = :UF_FILNOM ;
                      // FL_CAMPO  = :UF_CAMPO;
             If (Counter > 0);
-              UpdateAlter(p_UpdFProc
-                          :Dspf.MessageInd);
+              UpdateAlter(p_UpdFProc);
             Else;
-              InsertAlter(p_UpdFProc
-                          :Dspf.MessageInd);
+              InsertAlter(p_UpdFProc);
             EndIF;
 
           EndDo;
@@ -142,7 +138,6 @@
         Dcl-Proc UpdateAlter;
         Dcl-Pi UpdateALter;
              p_UpdFProc  LikeDs(Ds_UpdFproc);
-             MsgInd      Ind;
         End-Pi;
                 DsInput.In_Lib  = %Trim(UF_LIBNOM);
                 DsInput.In_File = %Trim(UF_FILNOM);
@@ -162,9 +157,12 @@
                   UpdFprocMask(DsInput) ;
                 EndIf;
 
-                If (DsInput.In_Error = *off);
+                If (DsInput.In_ErrorMsg = 'ENC0008') Or
+                   (DsInput.In_CritCam = 'W') ;
                   Exec Sql
-                   Update FILLST00F set FL_CRITCAM = :DsInput.In_CritCam
+                   Update FILLST00F set FL_CRITCAM = :DsInput.In_CritCam,
+                                        FL_FPRLPGM = :DsInput.In_FprLPgm,
+                                        FL_FPRPGM  = :DsInput.In_FprPgm
                             where FL_LIB  = :UF_LIBNOM and
                                   FL_FILE = :UF_FILNOM and
                                   FL_CAMPO = :UF_CAMPO;
@@ -172,18 +170,21 @@
 
                 If ((SqlStt <> '00000') or (DsInput.In_Error = *On)) And
                    (Dspf.MessageInd = *Off);
-                   p_UpdFproc.UF_Message = 'ENC0005';
+                   If (DsInput.In_Error = *On);
+                     MSGID = DsInput.In_ErrorMsg;
+                   Else;
+                     MSGID = 'ENC0004';
+                   EndIf;
                    Dspf.MessageInd = *ON;
                 Else;
-                   p_UpdFproc.UF_Message = 'ENC0006';
-                   p_UpdFproc.UF_MessageInd = *ON;
+                   p_UpdFproc.UF_Message = 'ENC0008';
+                   p_UpdFproc.UF_MessageInd = *On;
                 EndIf;
         End-Proc;
 
         Dcl-Proc InsertAlter;
         Dcl-Pi InsertAlter;
              p_UpdFProc  LikeDs(Ds_UpdFproc);
-             MsgInd      Ind;
         End-Pi;
               Exec Sql
                 DECLARE INS_ALLREC CURSOR FOR
@@ -205,7 +206,7 @@
                          WHEN C.SYSTEM_COLUMN_NAME = :UF_CAMPO
                          THEN :UF_PGMFLDP
                          WHEN COALESCE(F.FIELD_PROC, ' ') <> ' '
-                         THEN FILSST(F.FIELD_PROC)
+                         THEN OBJSST(F.FIELD_PROC)
                          ELSE ' '
                        END NOME_PGM_FIELDPROC,
                        CASE
